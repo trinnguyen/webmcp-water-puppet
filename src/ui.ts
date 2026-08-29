@@ -1,99 +1,130 @@
-import { loadShows, loadShowByName, state } from './state';
-import { toggleMute, getMuteState, initAudio, playBGM } from './audio';
+import { toggleMute, getMuteState } from './audio';
 
-export function setupUI(onEnterStage: () => void, onPlaySavedShow: () => void) {
-  const gate = document.getElementById('gate')!;
-  const gateBtn = document.getElementById('gate-btn')!;
-  const muteBtn = document.getElementById('mute-btn')!;
-  const drawerTab = document.getElementById('drawer-tab')!;
-  const drawer = document.getElementById('saved-drawer')!;
-  const showsList = document.getElementById('shows-list')!;
-  
-  // Set initial mute button state
-  muteBtn.textContent = getMuteState() ? '🔇' : '🔊';
+let toastTimeout: number | null = null;
+let backBtn: HTMLButtonElement | null = null;
+let turnBanner: HTMLDivElement | null = null;
 
-  gateBtn.addEventListener('click', async () => {
-    gate.classList.add('hidden');
-    await initAudio();
-    if (state.activeShow.music !== 'silent') {
-      playBGM(state.activeShow.music || 'bgm');
-    }
-    onEnterStage();
-  });
+export function setupUI(): void {
+  const muteBtn = document.getElementById('mute-btn');
+  if (muteBtn) {
+    muteBtn.textContent = getMuteState() ? '🔇' : '🔊';
+    muteBtn.addEventListener('click', () => {
+      const isMuted = toggleMute();
+      muteBtn.textContent = isMuted ? '🔇' : '🔊';
+    });
+  }
 
-  muteBtn.addEventListener('click', () => {
-    const isMuted = toggleMute();
-    muteBtn.textContent = isMuted ? '🔇' : '🔊';
-  });
-
-  let drawerOpen = false;
-  drawerTab.addEventListener('click', () => {
-    drawerOpen = !drawerOpen;
-    drawer.classList.toggle('open', drawerOpen);
-    if (drawerOpen) {
-      drawerTab.style.bottom = '160px';
-      renderSavedShows(showsList, () => {
-        drawerOpen = false;
-        drawer.classList.remove('open');
-        drawerTab.style.bottom = '0';
-        onPlaySavedShow();
-      });
-    } else {
-      drawerTab.style.bottom = '0';
-    }
-  });
+  const showNameEl = document.getElementById('show-name');
+  if (showNameEl) {
+    showNameEl.textContent = '🎮 Chọn trò chơi';
+  }
 }
 
-function renderSavedShows(container: HTMLElement, onSelect: () => void) {
-  loadShows();
-  container.innerHTML = '';
-  
-  const shows = Object.keys(state.savedShows);
-  if (shows.length === 0) {
-    container.innerHTML = '<p style="font-size: 0.8rem; color: #888;">Chưa có vở diễn nào được lưu.</p>';
+export function updateWebMCPStatus(status: 'online' | 'offline', text: string = ''): void {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  if (dot) {
+    dot.className = `status-dot ${status === 'online' ? '' : 'offline'}`;
+  }
+  if (txt) {
+    txt.textContent = `WebMCP: ${text || (status === 'online' ? 'Online' : 'Offline')}`;
+  }
+}
+
+export function updateGameName(name: string): void {
+  const el = document.getElementById('show-name');
+  if (el) {
+    el.textContent = `🎮 ${name}`;
+  }
+}
+
+export function showToast(message: string, duration: number = 2500): void {
+  const popup = document.getElementById('teu-popup');
+  if (!popup) {
+    console.warn('[ui] toast', message);
     return;
   }
 
-  shows.forEach(name => {
-    const show = state.savedShows[name];
-    const card = document.createElement('div');
-    card.className = 'show-card';
-    card.innerHTML = `
-      <div class="card-title">${show.name}</div>
-      <div class="card-meta">${show.cast.length} puppets · ${show.moves.length} moves</div>
-      <div class="card-puppets">${show.cast.map(p => getPuppetEmoji(p.character)).join('')}</div>
-    `;
-    card.addEventListener('click', () => {
-      loadShowByName(name);
-      updateShowName(name);
-      onSelect();
-    });
-    container.appendChild(card);
-  });
+  const speech = popup.querySelector('.teu-speech');
+  if (speech) {
+    speech.textContent = message;
+  }
+
+  if (toastTimeout !== null) {
+    window.clearTimeout(toastTimeout);
+  }
+
+  popup.classList.add('show');
+  toastTimeout = window.setTimeout(() => {
+    popup.classList.remove('show');
+    toastTimeout = null;
+  }, duration);
 }
 
-function getPuppetEmoji(char: string) {
-  switch (char) {
-    case 'teu': return '🎭';
-    case 'dragon': return '🐉';
-    case 'farmer': return '👨‍🌾';
-    case 'fish': return '🐟';
-    default: return '❓';
+export function showBackButton(onClick: () => void): void {
+  const topControls = document.getElementById('top-controls');
+  if (!topControls) return;
+
+  if (!backBtn) {
+    backBtn = document.getElementById('back-btn') as HTMLButtonElement | null;
+  }
+
+  if (!backBtn) {
+    backBtn = document.createElement('button');
+    backBtn.className = 'icon-btn';
+    backBtn.id = 'back-btn';
+    backBtn.textContent = '←';
+    topControls.prepend(backBtn);
+  }
+
+  backBtn.onclick = () => {
+    onClick();
+  };
+}
+
+export function hideBackButton(): void {
+  if (backBtn) {
+    backBtn.remove();
+    backBtn = null;
+  } else {
+    const el = document.getElementById('back-btn');
+    if (el) el.remove();
   }
 }
 
-export function updateShowName(name: string) {
-  const showNameEl = document.getElementById('show-name');
-  if (showNameEl) {
-    showNameEl.textContent = `🎬 ${name}`;
+export function showTurnBanner(text: string): void {
+  if (!turnBanner) {
+    turnBanner = document.getElementById('turn-banner') as HTMLDivElement | null;
   }
+
+  if (!turnBanner) {
+    turnBanner = document.createElement('div');
+    turnBanner.id = 'turn-banner';
+    turnBanner.style.position = 'fixed';
+    turnBanner.style.top = '60px';
+    turnBanner.style.left = '50%';
+    turnBanner.style.transform = 'translateX(-50%)';
+    turnBanner.style.background = 'rgba(10, 10, 18, 0.85)';
+    turnBanner.style.color = '#FFD54F';
+    turnBanner.style.padding = '8px 16px';
+    turnBanner.style.borderRadius = '10px';
+    turnBanner.style.zIndex = '60';
+    turnBanner.style.fontWeight = '600';
+    turnBanner.style.fontSize = '0.9rem';
+    turnBanner.style.pointerEvents = 'none';
+    turnBanner.style.backdropFilter = 'blur(8px)';
+    document.body.appendChild(turnBanner);
+  }
+
+  turnBanner.textContent = text;
 }
 
-export function updateWebMCPStatus(status: 'online' | 'offline', text: string = '') {
-  const dot = document.getElementById('status-dot');
-  const txt = document.getElementById('status-text');
-  if (dot && txt) {
-    dot.className = `status-dot ${status}`;
-    txt.textContent = `WebMCP: ${text || (status === 'online' ? 'Online' : 'Offline')}`;
+export function hideTurnBanner(): void {
+  if (turnBanner) {
+    turnBanner.remove();
+    turnBanner = null;
+  } else {
+    const el = document.getElementById('turn-banner');
+    if (el) el.remove();
   }
 }

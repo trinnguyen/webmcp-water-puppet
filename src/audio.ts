@@ -1,10 +1,21 @@
 const audioCtx: AudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
 let bgmAudio: HTMLAudioElement | null = null;
+let currentTrack: string | null = null;
 let isMuted = localStorage.getItem('waterPuppetMuted') === 'true';
+
+const trackMap: Record<string, string> = {
+  dan_bau: 'assets/audio/bgm.mp3',
+  festive: 'assets/audio/festive.mp3',
+  gong: 'assets/audio/gong.mp3',
+};
 
 const sfxElements: Record<string, HTMLAudioElement> = {
   splash: new Audio('assets/audio/splash.wav'),
   sneeze: new Audio('assets/audio/sneeze.wav'),
+  capture: new Audio('assets/audio/capture.wav'),
+  dice_roll: new Audio('assets/audio/dice_roll.wav'),
+  win_chime: new Audio('assets/audio/win_chime.wav'),
+  coin: new Audio('assets/audio/coin.wav'),
 };
 
 export async function initAudio() {
@@ -16,7 +27,7 @@ export async function initAudio() {
 export function toggleMute() {
   isMuted = !isMuted;
   localStorage.setItem('waterPuppetMuted', isMuted.toString());
-  
+
   if (bgmAudio) {
     bgmAudio.muted = isMuted;
   }
@@ -28,14 +39,20 @@ export function playBGM(track: string) {
     if (bgmAudio) {
       bgmAudio.pause();
     }
+    currentTrack = 'silent';
     return;
   }
 
+  const targetSrc = trackMap[track] ?? 'assets/audio/bgm.mp3';
+
   if (!bgmAudio) {
-    bgmAudio = new Audio('assets/audio/bgm.mp3');
+    bgmAudio = new Audio(targetSrc);
     bgmAudio.loop = true;
+  } else if (currentTrack !== track) {
+    bgmAudio.src = targetSrc;
   }
-  
+
+  currentTrack = track;
   bgmAudio.muted = isMuted;
   bgmAudio.play().catch(e => console.warn('Audio playback failed', e));
 }
