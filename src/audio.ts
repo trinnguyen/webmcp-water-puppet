@@ -5,8 +5,8 @@ let isMuted = localStorage.getItem('waterPuppetMuted') === 'true';
 
 const trackMap: Record<string, string> = {
   dan_bau: 'assets/audio/bgm.mp3',
-  festive: 'assets/audio/festive.mp3',
-  gong: 'assets/audio/gong.mp3',
+  festive: 'assets/audio/bgm_festive.mp3',
+  gong: 'assets/audio/bgm_gong.mp3',
 };
 
 const sfxElements: Record<string, HTMLAudioElement> = {

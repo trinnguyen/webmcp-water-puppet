@@ -330,7 +330,7 @@ export function resetBoard(): void {
   updateBoardView(board);
 }
 
-export async function driveMove(pitIndex: number): Promise<OAQBoard> {
+export async function driveMove(pitIndex: number, isAgent: boolean = false): Promise<OAQBoard> {
   if (!clickEnabled) {
     throw new Error('Busy');
   }
@@ -356,10 +356,23 @@ export async function driveMove(pitIndex: number): Promise<OAQBoard> {
       const fromPit =
         trace.capturedPits.length > 0 ? trace.capturedPits[0] : pitIndex;
       await animateCapture(fromPit, mover, gained);
+    } else if (isAgent) {
+      // Weak move grumble
+      const targetPit = pitEls[pitIndex];
+      if (targetPit) {
+        gsap.fromTo(targetPit, { rotation: -10 }, { rotation: 10, yoyo: true, repeat: 5, duration: 0.1, clearProps: 'rotation' });
+      }
+      const { showToast } = await import('../../ui');
+      showToast('Bước cờ yếu quá, Tễu chê!');
     }
 
     updateBoardView(board);
     saveState();
+    
+    if (oldBoard.status === 'playing' && board.status === 'finished') {
+      import('../../hub').then(h => h.markGameCompleted('o-an-quan'));
+    }
+
     return board;
   } finally {
     clickEnabled = true;
@@ -369,7 +382,7 @@ export async function driveMove(pitIndex: number): Promise<OAQBoard> {
 async function handlePitClick(pitIndex: number): Promise<void> {
   if (!clickEnabled || !isValidMove(board, pitIndex)) return;
   try {
-    await driveMove(pitIndex);
+    await driveMove(pitIndex, false);
   } catch {
     // ignore
   }

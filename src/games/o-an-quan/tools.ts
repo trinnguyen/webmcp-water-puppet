@@ -42,7 +42,7 @@ export const oaqTools: GameToolDef[] = [
     annotations: { readOnlyHint: false, untrustedContentHint: false },
     execute: async (input: any) => {
       try {
-        const board = await driveMove(input.bin);
+        const board = await driveMove(input.bin, true);
         return JSON.stringify({
           status: 'ok',
           message: `Moved from bin ${input.bin}`,

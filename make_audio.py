@@ -129,11 +129,107 @@ sn += [0.0]*int(SR*0.15)
 p=max(1e-6,max(abs(s) for s in sn)); sn=[s*0.92/p for s in sn]
 write_wav('/tmp/sneeze_tmp.wav', sn)
 
+# ---------------- capture.wav: scoop/capture ----------------
+capture = pluck(440, 0.08, 0.5) + pluck(587.33, 0.2, 0.5)
+p = max(1e-6, max(abs(s) for s in capture)); capture = [s*0.9/p for s in capture]
+write_wav('/tmp/capture_tmp.wav', capture)
+
+# ---------------- dice_roll.wav: rattling dice tumble ----------------
+dice = []
+for i in range(int(SR * 0.4)):
+    t = i / SR
+    noise = math.sin(2*math.pi*1500*t + 10*math.sin(2*math.pi*333*t))
+    env_mod = max(0, math.sin(2*math.pi*18*t)) ** 3
+    decay = math.exp(-t * 4)
+    dice.append(0.7 * noise * env_mod * decay)
+p = max(1e-6, max(abs(s) for s in dice)); dice = [s*0.9/p for s in dice]
+write_wav('/tmp/dice_roll_tmp.wav', dice)
+
+# ---------------- win_chime.wav: bright winning arpeggio ----------------
+win = []
+for idx, f in enumerate([523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98]):
+    seg = pluck(f, 0.6, 0.4)
+    if idx == 0:
+        win = seg
+    else:
+        offset = int(SR * 0.08 * idx)
+        for j in range(len(seg)):
+            if offset + j < len(win):
+                win[offset + j] += seg[j]
+            else:
+                win.append(seg[j])
+p = max(1e-6, max(abs(s) for s in win)); win = [s*0.9/p for s in win]
+write_wav('/tmp/win_chime_tmp.wav', win)
+
+# ---------------- coin.wav: distinctive coin drop ----------------
+coin = []
+for i in range(int(SR * 0.08)):
+    t = i / SR
+    coin.append(math.sin(2*math.pi*987*t) * math.exp(-t*30))
+for i in range(int(SR * 0.4)):
+    t = i / SR
+    coin.append(math.sin(2*math.pi*1318.51*t) * math.exp(-t*10))
+p = max(1e-6, max(abs(s) for s in coin)); coin = [s*0.9/p for s in coin]
+write_wav('/tmp/coin_tmp.wav', coin)
+
+# ---------------- bgm_festive.mp3: lively melody ----------------
+F_high = {
+    'C4':261.63,'D4':293.66,'E4':329.63,'G4':392.00,'A4':440.0,
+    'C5':523.25,'D5':587.33,'E5':659.25,'G5':783.99,'A5':880.00
+}
+festive_mel = [
+    ('C5',1),('A4',1),('G4',1),('E4',1),('D4',2),('G4',2),
+    ('C4',1),('D4',1),('E4',2),('A4',1),('G4',1),('E4',2),
+    ('G4',1),('A4',1),('C5',2),('A4',1),('G4',1),('E4',2),
+    ('D4',1),('E4',1),('G4',2),('C4',1),('D4',1),('C4',2),
+]
+SIXTEENTH = 0.15
+bgm_f = []
+for note, beats in festive_mel:
+    dur = SIXTEENTH * beats
+    bgm_f += pluck(F_high[note], dur, 0.4)
+p = max(1e-6, max(abs(s) for s in bgm_f)); bgm_f = [s*0.9/p for s in bgm_f]
+bgm_f += [0.0]*int(SR*0.5)
+write_wav('/tmp/bgm_festive_tmp.wav', bgm_f)
+
+# ---------------- bgm_gong.mp3: slower gong/bell ambience ----------------
+bgm_g = []
+for n_idx in range(4): # 4 gong hits
+    gong = []
+    dur = 4.0
+    for i in range(int(SR * dur)):
+        t = i / SR
+        env = math.exp(-t * 0.8)
+        mod = math.sin(2*math.pi*155*t) * math.exp(-t*3)
+        v = math.sin(2*math.pi*110*t + 2.5*mod)
+        v += 0.2 * math.sin(2*math.pi*600*t) * math.exp(-t*4)
+        v += 0.1 * math.sin(2*math.pi*870*t) * math.exp(-t*5)
+        gong.append(v * env)
+    bgm_g += gong
+p = max(1e-6, max(abs(s) for s in bgm_g)); bgm_g = [s*0.9/p for s in bgm_g]
+write_wav('/tmp/bgm_gong_tmp.wav', bgm_g)
+
+
 # ---------------- encode bgm -> mp3, others stay wav ----------------
-for src,dst in [('/tmp/bgm_tmp.wav','public/assets/audio/bgm.mp3')]:
+mp3_files = [
+    ('/tmp/bgm_tmp.wav', 'public/assets/audio/bgm.mp3'),
+    ('/tmp/bgm_festive_tmp.wav', 'public/assets/audio/bgm_festive.mp3'),
+    ('/tmp/bgm_gong_tmp.wav', 'public/assets/audio/bgm_gong.mp3'),
+]
+for src, dst in mp3_files:
     subprocess.run(['ffmpeg','-y','-loglevel','error','-i',src,
                     '-codec:a','libmp3lame','-b:a','128k',dst], check=True)
+
 import shutil
-shutil.move('/tmp/splash_tmp.wav','public/assets/audio/splash.wav')
-shutil.move('/tmp/sneeze_tmp.wav','public/assets/audio/sneeze.wav')
+wav_files = [
+    ('/tmp/splash_tmp.wav', 'public/assets/audio/splash.wav'),
+    ('/tmp/sneeze_tmp.wav', 'public/assets/audio/sneeze.wav'),
+    ('/tmp/capture_tmp.wav', 'public/assets/audio/capture.wav'),
+    ('/tmp/dice_roll_tmp.wav', 'public/assets/audio/dice_roll.wav'),
+    ('/tmp/win_chime_tmp.wav', 'public/assets/audio/win_chime.wav'),
+    ('/tmp/coin_tmp.wav', 'public/assets/audio/coin.wav'),
+]
+for src, dst in wav_files:
+    shutil.move(src, dst)
+
 print("done")

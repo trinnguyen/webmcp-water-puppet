@@ -357,6 +357,18 @@ export async function rollBauCuaDice(): Promise<BauCuaState> {
 
   if (state.lastRoll) {
     await animateDiceRoll(state.lastRoll);
+    
+    // Check for triple
+    if (state.lastRoll[0] === state.lastRoll[1] && state.lastRoll[1] === state.lastRoll[2]) {
+      if (rootEl) {
+        gsap.fromTo(rootEl, 
+          { x: -20, y: -20 }, 
+          { x: 20, y: 20, duration: 0.05, yoyo: true, repeat: 10, clearProps: 'x,y' }
+        );
+      }
+      const { showToast } = await import('../../ui');
+      showToast('XỐC! BA CON!');
+    }
   }
 
   isRolling = false;
@@ -384,6 +396,8 @@ export async function resolveBauCua(): Promise<BauCuaState> {
           ? `😢 Mất ${-net} điểm`
           : '🤝 Hòa điểm';
   }
+
+  import('../../hub').then(h => h.markGameCompleted('bau-cua'));
 
   saveState();
   updateBauCuaView(state);

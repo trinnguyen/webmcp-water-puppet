@@ -103,11 +103,34 @@ const globalTools: WebMCPTool[] = [
 
 const allTools: WebMCPTool[] = globalTools.concat(...games.map((g) => g.tools));
 
+let unsavedActionCount = 0;
+
 export async function initWebMCP(): Promise<void> {
+  // Wrap all tools to track unsaved actions
+  const wrappedTools = allTools.map((tool) => {
+    const originalExecute = tool.execute;
+    return {
+      ...tool,
+      execute: async (input: any) => {
+        if (tool.name === 'save_progress') {
+          unsavedActionCount = 0;
+        } else {
+          unsavedActionCount++;
+          if (unsavedActionCount > 5) {
+            import('./ui').then(m => m.showToast('Người xướng trò bị rối!'));
+            // Keep at 6 until they save, or reset? Let's reset so they get annoyed again if they keep going
+            unsavedActionCount = 0;
+          }
+        }
+        return originalExecute(input);
+      }
+    };
+  });
+
   if (typeof document.modelContext !== 'undefined') {
     const controller = new AbortController();
     window.__webmcpController = controller;
-    for (const tool of allTools) {
+    for (const tool of wrappedTools) {
       try {
         await document.modelContext.registerTool(tool, { signal: controller.signal });
       } catch (err) {
@@ -118,7 +141,7 @@ export async function initWebMCP(): Promise<void> {
   } else {
     console.warn('[WebMCP] Not available — exposing window.__debugTools');
     window.__debugTools = {};
-    for (const tool of allTools) {
+    for (const tool of wrappedTools) {
       window.__debugTools[tool.name] = tool.execute;
     }
     window.dispatchEvent(new CustomEvent('webmcp-status-change', { detail: 'offline' }));

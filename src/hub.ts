@@ -199,12 +199,14 @@ export function startGame(gameId: string): string {
     game.buildScene(container);
   }
 
-  hubState.gamesPlayedLedger[gameId] = (hubState.gamesPlayedLedger[gameId] || 0) + 1;
-  saveLedger();
-
   window.dispatchEvent(new CustomEvent('hub-hidden'));
 
   return JSON.stringify({ status: 'ok', game: gameId });
+}
+
+export function markGameCompleted(gameId: string): void {
+  hubState.gamesPlayedLedger[gameId] = (hubState.gamesPlayedLedger[gameId] || 0) + 1;
+  saveLedger();
 }
 
 export function returnToHub(): void {
