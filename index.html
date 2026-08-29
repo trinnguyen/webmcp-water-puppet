@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>🎭 Đạo Diễn Múa Rối Nước — Water Puppet Director</title>
+<title>Sân Chơi — Trò Chơi Dân Gian Việt Nam</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -42,7 +42,7 @@ body {
 }
 
 /* 3D Canvas will be injected here */
-#canvas-container {
+#game-container {
   position: absolute;
   inset: 0;
   z-index: 1;
@@ -211,87 +211,7 @@ body {
   background: #FF9800;
 }
 
-#drawer-tab {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 8px 24px;
-  background: var(--overlay-bg);
-  border-radius: 14px 14px 0 0;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--folk-gold);
-  cursor: pointer;
-  pointer-events: auto;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: background 0.2s;
-  z-index: 12;
-  user-select: none;
-}
-#drawer-tab:hover {
-  background: var(--overlay-light);
-}
 
-#saved-drawer {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 160px;
-  background: var(--overlay-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(255,213,79,0.2);
-  transform: translateY(100%);
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  pointer-events: auto;
-  z-index: 11;
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-}
-#saved-drawer.open {
-  transform: translateY(0);
-}
-#saved-drawer h3 {
-  font-size: 0.75rem;
-  color: var(--folk-gold);
-  margin-bottom: 10px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-.shows-list {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  flex: 1;
-  padding-bottom: 4px;
-}
-.show-card {
-  flex: 0 0 140px;
-  background: rgba(46, 154, 182, 0.15);
-  border: 1px solid rgba(109, 213, 237, 0.3);
-  border-radius: 10px;
-  padding: 10px 12px;
-  cursor: pointer;
-  transition: border-color 0.2s, transform 0.2s;
-}
-.show-card:hover {
-  border-color: var(--folk-gold);
-  transform: translateY(-2px);
-}
-.show-card .card-title {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 4px;
-}
-.show-card .card-meta {
-  font-size: 0.6rem;
-  color: var(--text-secondary);
-}
 
 /* ========== STARTUP GATE ========== */
 #gate {
@@ -399,7 +319,7 @@ body {
   #orientation-hint { display: none !important; }
 }
 
-/* ========== TỄU 4TH WALL ========== */
+/* ========== TOAST NOTIFICATION ========== */
 #teu-popup {
   position: fixed;
   bottom: 20%;
@@ -463,10 +383,10 @@ body {
 
 <div id="gate">
   <div id="gate-lanterns"></div>
-  <div id="gate-title">🎭 Đạo Diễn<br>Múa Rối Nước</div>
-  <div id="gate-subtitle">Sân khấu rối nước AI — Hãy chỉ đạo buổi biểu diễn của riêng bạn!<br><small>AI Water Puppet Stage — Direct your own show!</small></div>
-  <div id="gate-chars">🎭🐉🐟👨‍🌾</div>
-  <button id="gate-btn">🔊 Mở Màn — Enter Stage</button>
+  <div id="gate-title">Sân Chơi<br>Trò Chơi Dân Gian</div>
+  <div id="gate-subtitle">Hub trò chơi dân gian AI — Khám phá nét đẹp văn hóa Việt Nam!<br><small>AI Folk Games Hub — Discover the beauty of Vietnamese culture!</small></div>
+  <div id="gate-chars">🎲🎭🌾</div>
+  <button id="gate-btn">🔊 Bắt Đầu — Start</button>
   <div id="gate-footer">WebMCP Challenge 2026 · Made with ❤️ in Việt Nam</div>
 </div>
 
@@ -487,7 +407,7 @@ body {
     <div class="lantern-string"></div>
     <div class="lantern-body" style="background: radial-gradient(#66BB6A, var(--folk-green));"></div>
   </div>
-  <div id="canvas-container"></div>
+  <div id="game-container"></div>
 </div>
 
 <div id="ui-overlay">
@@ -499,18 +419,12 @@ body {
     <span class="status-dot offline" id="status-dot"></span>
     <span id="status-text">WebMCP: Offline</span>
   </div>
-  <div id="drawer-tab">📜 Vở Diễn — Saved Shows</div>
-  <div id="saved-drawer">
-    <h3>📜 Vở diễn đã lưu — Saved Shows</h3>
-    <div class="shows-list" id="shows-list"></div>
-  </div>
 </div>
 
 <div id="teu-popup">
-  <div class="teu-face">🎭</div>
+  <div class="teu-face">🔔</div>
   <div class="teu-speech">
-    "Đạo diễn ơi, rối tay em mỏi rồi!"
-    <small>"Director, my arms are tired!"</small>
+    Thông báo!
   </div>
 </div>
 
