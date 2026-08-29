@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>🎭 Đạo Diễn Múa Rối Nước — Water Puppet Director</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* ========== RESET & BASE ========== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+body {
+  font-family: 'Be Vietnam Pro', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0a0a12;
+  color: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ========== COLOR PALETTE (CSS Custom Properties) ========== */
+:root {
+  /* Water */
+  --water-deep:     #0B3D5B;
+  --water-mid:      #1A6B8A;
+  --water-surface:  #2E9AB6;
+  --water-highlight:#6DD5ED;
+  --water-foam:     #B8E8F0;
+
+  /* Wood */
+  --wood-dark:      #3E2723;
+  --wood-mid:       #5D4037;
+  --wood-light:     #8D6E63;
+
+  /* Folk art */
+  --folk-red:       #C62828;
+  --folk-red-light: #EF5350;
+  --folk-yellow:    #F9A825;
+  --folk-gold:      #FFD54F;
+  --folk-green:     #2E7D32;
+
+  /* UI */
+  --overlay-bg:     rgba(10, 10, 18, 0.85);
+  --overlay-light:  rgba(10, 10, 18, 0.6);
+  --btn-primary:    #C62828;
+  --btn-hover:      #E53935;
+  --text-primary:   #FFFDE7;
+  --text-secondary: #B8E8F0;
+
+  /* Puppet signature colors */
+  --teu-color:      #E53935;
+  --dragon-color:   #F9A825;
+  --farmer-color:   #4CAF50;
+  --fish-color:     #29B6F6;
+}
+
+/* ========== STAGE (full viewport) ========== */
+#stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* Sky gradient — warm Vietnamese sunset */
+#sky {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 55%;
+  background: linear-gradient(
+    180deg,
+    #1a0a2e 0%,
+    #2d1b4e 20%,
+    #6b3a6e 40%,
+    #c0524e 60%,
+    #e8854a 75%,
+    #f4b860 90%,
+    #fdd98a 100%
+  );
+}
+
+/* Moon */
+#moon {
+  position: absolute;
+  top: 8%;
+  right: 15%;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #FFFDE7, #FFD54F);
+  box-shadow: 0 0 40px 15px rgba(255, 213, 79, 0.3);
+  z-index: 1;
+}
+
+/* Stars */
+.star {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: #FFFDE7;
+  border-radius: 50%;
+  animation: twinkle 2s ease-in-out infinite alternate;
+}
+@keyframes twinkle {
+  from { opacity: 0.3; }
+  to   { opacity: 1; }
+}
+
+/* Water area */
+#water {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 50%;
+  background: linear-gradient(
+    180deg,
+    var(--water-surface) 0%,
+    var(--water-mid) 40%,
+    var(--water-deep) 100%
+  );
+  overflow: hidden;
+}
+
+/* Animated ripples */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid var(--water-highlight);
+  opacity: 0;
+  animation: ripple-expand 4s ease-out infinite;
+}
+@keyframes ripple-expand {
+  0%   { transform: scale(0); opacity: 0.6; }
+  100% { transform: scale(8); opacity: 0; }
+}
+
+/* Shimmer overlay on water */
+#water::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(109, 213, 237, 0.08) 25%,
+    transparent 50%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 6s linear infinite;
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+/* ========== LANTERNS ========== */
+.lantern {
+  position: absolute;
+  z-index: 2;
+}
+.lantern-body {
+  width: 28px;
+  height: 38px;
+  border-radius: 50%;
+  position: relative;
+  animation: lantern-sway 3s ease-in-out infinite alternate;
+}
+.lantern-body::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 6px;
+  background: var(--folk-gold);
+  border-radius: 2px 2px 0 0;
+}
+.lantern-body::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 8px;
+  background: var(--folk-gold);
+}
+.lantern-string {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  width: 1px;
+  height: 20px;
+  background: var(--folk-gold);
+}
+@keyframes lantern-sway {
+  from { transform: rotate(-5deg); }
+  to   { transform: rotate(5deg); }
+}
+
+/* ========== PUPPET PLACEHOLDERS ========== */
+.puppet {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  z-index: 5;
+}
+.puppet:hover {
+  transform: scale(1.1) translateY(-4px);
+}
+.puppet-sprite {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  border: 3px solid var(--folk-gold);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  position: relative;
+}
+.puppet-stick {
+  width: 3px;
+  height: 40px;
+  background: linear-gradient(180deg, var(--wood-mid), var(--wood-dark));
+  border-radius: 1px;
+}
+.puppet-name {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--folk-gold);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  margin-top: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.puppet:hover .puppet-name {
+  opacity: 1;
+}
+
+/* ========== UI OVERLAY ========== */
+#ui-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Top-left controls */
+#top-controls {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+}
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: none;
+  background: var(--overlay-bg);
+  color: var(--text-primary);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.icon-btn:hover {
+  background: var(--overlay-light);
+}
+#show-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--overlay-bg);
+  padding: 6px 14px;
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: auto;
+}
+
+/* Top-right: WebMCP status indicator */
+#webmcp-status {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  background: var(--overlay-bg);
+  padding: 5px 10px;
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4CAF50;
+}
+.status-dot.offline {
+  background: #FF9800;
+}
+
+/* ========== SAVED SHOWS DRAWER ========== */
+#drawer-tab {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 24px;
+  background: var(--overlay-bg);
+  border-radius: 14px 14px 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--folk-gold);
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.2s;
+  z-index: 12;
+  user-select: none;
+}
+#drawer-tab:hover {
+  background: var(--overlay-light);
+}
+
+#saved-drawer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 160px;
+  background: var(--overlay-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255,213,79,0.2);
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+  z-index: 11;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+}
+#saved-drawer.open {
+  transform: translateY(0);
+}
+#saved-drawer h3 {
+  font-size: 0.75rem;
+  color: var(--folk-gold);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.shows-list {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  flex: 1;
+  padding-bottom: 4px;
+}
+.show-card {
+  flex: 0 0 140px;
+  background: rgba(46, 154, 182, 0.15);
+  border: 1px solid rgba(109, 213, 237, 0.3);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.show-card:hover {
+  border-color: var(--folk-gold);
+  transform: translateY(-2px);
+}
+.show-card .card-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.show-card .card-meta {
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+}
+.show-card .card-puppets {
+  margin-top: 6px;
+  font-size: 16px;
+  letter-spacing: 2px;
+}
+
+/* ========== STARTUP GATE ========== */
+#gate {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: radial-gradient(ellipse at center, #1a0a2e 0%, #0a0a12 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  text-align: center;
+  padding: 20px;
+}
+#gate.hidden {
+  display: none;
+}
+#gate-title {
+  font-size: clamp(1.5rem, 5vw, 2.5rem);
+  font-weight: 800;
+  color: var(--folk-gold);
+  text-shadow: 0 2px 12px rgba(249, 168, 37, 0.4);
+  line-height: 1.3;
+}
+#gate-subtitle {
+  font-size: clamp(0.8rem, 2.5vw, 1rem);
+  color: var(--text-secondary);
+  max-width: 400px;
+}
+#gate-btn {
+  margin-top: 10px;
+  padding: 16px 40px;
+  font-size: clamp(1rem, 3vw, 1.3rem);
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--btn-primary);
+  border: 3px solid var(--folk-gold);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 6px 24px rgba(198, 40, 40, 0.4);
+  min-width: 200px;
+}
+#gate-btn:hover {
+  background: var(--btn-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(198, 40, 40, 0.6);
+}
+#gate-btn:active {
+  transform: translateY(0);
+}
+#gate-lanterns {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 80px;
+  display: flex;
+  justify-content: space-around;
+  padding-top: 10px;
+}
+#gate-chars {
+  font-size: clamp(2rem, 8vw, 4rem);
+  letter-spacing: 12px;
+  margin-top: 8px;
+}
+#gate-footer {
+  position: absolute;
+  bottom: 16px;
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.3);
+}
+
+/* ========== ORIENTATION HINT ========== */
+#orientation-hint {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(10, 10, 18, 0.95);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+}
+#orientation-hint .rotate-icon {
+  font-size: 48px;
+  animation: rotate-phone 2s ease-in-out infinite;
+}
+@keyframes rotate-phone {
+  0%, 100% { transform: rotate(0deg); }
+  50%      { transform: rotate(90deg); }
+}
+#orientation-hint p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+@media (orientation: portrait) {
+  #orientation-hint {
+    display: flex;
+  }
+}
+@media (orientation: landscape) {
+  #orientation-hint {
+    display: none !important;
+  }
+}
+/* On desktop (wide viewports in portrait-ish), don't show hint */
+@media (min-width: 900px) {
+  #orientation-hint {
+    display: none !important;
+  }
+}
+
+/* ========== TỄU 4TH WALL (demo) ========== */
+#teu-popup {
+  position: fixed;
+  bottom: 20%;
+  left: -250px;
+  z-index: 50;
+  background: var(--overlay-bg);
+  border: 2px solid var(--folk-gold);
+  border-radius: 16px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+  max-width: 280px;
+}
+#teu-popup.show {
+  left: 16px;
+}
+#teu-popup .teu-face {
+  font-size: 36px;
+}
+#teu-popup .teu-speech {
+  font-size: 0.75rem;
+  color: var(--folk-gold);
+  line-height: 1.4;
+}
+#teu-popup .teu-speech small {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.6rem;
+  margin-top: 2px;
+  font-style: italic;
+}
+
+/* ========== SCROLLBAR HIDE ========== */
+::-webkit-scrollbar { height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,213,79,0.3); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ===== ORIENTATION HINT ===== -->
+<div id="orientation-hint">
+  <div class="rotate-icon">📱</div>
+  <p>Xoay ngang để xem sân khấu<br><small>Rotate to landscape for the stage</small></p>
+</div>
+
+<!-- ===== STARTUP GATE ===== -->
+<div id="gate">
+  <div id="gate-lanterns"></div>
+  <div id="gate-title">🎭 Đạo Diễn<br>Múa Rối Nước</div>
+  <div id="gate-subtitle">Sân khấu rối nước AI — Hãy chỉ đạo buổi biểu diễn của riêng bạn!<br><small>AI Water Puppet Stage — Direct your own show!</small></div>
+  <div id="gate-chars">🎭🐉🐟👨‍🌾</div>
+  <button id="gate-btn">🔊 Mở Màn — Enter Stage</button>
+  <div id="gate-footer">WebMCP Challenge 2026 · Made with ❤️ in Việt Nam</div>
+</div>
+
+<!-- ===== STAGE ===== -->
+<div id="stage">
+  <!-- Sky -->
+  <div id="sky">
+    <div id="moon"></div>
+    <!-- Stars (positioned via JS) -->
+  </div>
+
+  <!-- Water -->
+  <div id="water">
+    <!-- Ripples added via JS -->
+  </div>
+
+  <!-- Lanterns -->
+  <div class="lantern" style="left: 5%; top: 32%;">
+    <div class="lantern-string"></div>
+    <div class="lantern-body" style="background: radial-gradient(var(--folk-red-light), var(--folk-red));"></div>
+  </div>
+  <div class="lantern" style="right: 8%; top: 28%;">
+    <div class="lantern-string"></div>
+    <div class="lantern-body" style="background: radial-gradient(var(--folk-gold), #e65100);"></div>
+  </div>
+  <div class="lantern" style="left: 20%; top: 35%;">
+    <div class="lantern-string"></div>
+    <div class="lantern-body" style="background: radial-gradient(#66BB6A, var(--folk-green));"></div>
+  </div>
+
+  <!-- Puppet placeholders (on the water) -->
+  <div class="puppet" style="left: 25%; top: 58%;">
+    <div class="puppet-sprite" style="background: radial-gradient(var(--teu-color), #B71C1C);">🎭</div>
+    <div class="puppet-stick"></div>
+    <div class="puppet-name">Chú Tễu</div>
+  </div>
+  <div class="puppet" style="left: 55%; top: 52%;">
+    <div class="puppet-sprite" style="background: radial-gradient(var(--dragon-color), #E65100);">🐉</div>
+    <div class="puppet-stick"></div>
+    <div class="puppet-name">Rồng</div>
+  </div>
+  <div class="puppet" style="left: 72%; top: 62%;">
+    <div class="puppet-sprite" style="background: radial-gradient(var(--fish-color), #0277BD);">🐟</div>
+    <div class="puppet-stick"></div>
+    <div class="puppet-name">Cá</div>
+  </div>
+  <div class="puppet" style="left: 40%; top: 65%;">
+    <div class="puppet-sprite" style="background: radial-gradient(var(--farmer-color), #1B5E20);">👨‍🌾</div>
+    <div class="puppet-stick"></div>
+    <div class="puppet-name">Nông Dân</div>
+  </div>
+</div>
+
+<!-- ===== UI OVERLAY ===== -->
+<div id="ui-overlay">
+  <!-- Top-left controls -->
+  <div id="top-controls">
+    <button class="icon-btn" id="mute-btn" title="Tắt/Bật âm thanh">🔊</button>
+    <div id="show-name">🎬 Buổi diễn mới</div>
+  </div>
+
+  <!-- Top-right status -->
+  <div id="webmcp-status">
+    <span class="status-dot offline"></span>
+    <span>WebMCP: Prototype</span>
+  </div>
+
+  <!-- Drawer tab -->
+  <div id="drawer-tab">📜 Vở Diễn — Saved Shows</div>
+
+  <!-- Saved shows drawer -->
+  <div id="saved-drawer">
+    <h3>📜 Vở diễn đã lưu — Saved Shows</h3>
+    <div class="shows-list">
+      <div class="show-card">
+        <div class="card-title">Rồng Đuổi Cá</div>
+        <div class="card-meta">Dragon Chases Fish · 3 puppets · 5 moves</div>
+        <div class="card-puppets">🐉🐟🎭</div>
+      </div>
+      <div class="show-card">
+        <div class="card-title">Tễu Ra Mắt</div>
+        <div class="card-meta">Tễu's Grand Entrance · 2 puppets · 8 moves</div>
+        <div class="card-puppets">🎭👨‍🌾</div>
+      </div>
+      <div class="show-card">
+        <div class="card-title">Lễ Hội Mùa Gặt</div>
+        <div class="card-meta">Harvest Festival · 4 puppets · 12 moves</div>
+        <div class="card-puppets">🎭🐉🐟👨‍🌾</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TỄU 4TH WALL POPUP (demo) ===== -->
+<div id="teu-popup">
+  <div class="teu-face">🎭</div>
+  <div class="teu-speech">
+    "Đạo diễn ơi, rối tay em mỏi rồi!"
+    <small>"Director, my arms are tired!"</small>
+  </div>
+</div>
+
+<script>
+// ===== GATE DISMISS =====
+const gate = document.getElementById('gate');
+const gateBtn = document.getElementById('gate-btn');
+gateBtn.addEventListener('click', () => {
+  gate.classList.add('hidden');
+  startRipples();
+  // Demo: show Tễu popup after 5 seconds
+  setTimeout(() => {
+    document.getElementById('teu-popup').classList.add('show');
+    setTimeout(() => {
+      document.getElementById('teu-popup').classList.remove('show');
+    }, 4000);
+  }, 5000);
+});
+
+// ===== MUTE TOGGLE =====
+const muteBtn = document.getElementById('mute-btn');
+let muted = false;
+muteBtn.addEventListener('click', () => {
+  muted = !muted;
+  muteBtn.textContent = muted ? '🔇' : '🔊';
+});
+
+// ===== SAVED SHOWS DRAWER =====
+const drawerTab = document.getElementById('drawer-tab');
+const drawer = document.getElementById('saved-drawer');
+let drawerOpen = false;
+drawerTab.addEventListener('click', () => {
+  drawerOpen = !drawerOpen;
+  drawer.classList.toggle('open', drawerOpen);
+  // Move tab up when drawer is open
+  if (drawerOpen) {
+    drawerTab.style.bottom = '160px';
+  } else {
+    drawerTab.style.bottom = '0';
+  }
+});
+
+// Close drawer when clicking a show card
+document.querySelectorAll('.show-card').forEach(card => {
+  card.addEventListener('click', () => {
+    const title = card.querySelector('.card-title').textContent;
+    document.getElementById('show-name').textContent = '🎬 ' + title;
+    drawerOpen = false;
+    drawer.classList.remove('open');
+    drawerTab.style.bottom = '0';
+  });
+});
+
+// ===== GENERATE STARS =====
+const sky = document.getElementById('sky');
+for (let i = 0; i < 30; i++) {
+  const star = document.createElement('div');
+  star.className = 'star';
+  star.style.left = Math.random() * 100 + '%';
+  star.style.top = Math.random() * 70 + '%';
+  star.style.animationDelay = (Math.random() * 3) + 's';
+  star.style.width = (Math.random() * 2 + 1.5) + 'px';
+  star.style.height = star.style.width;
+  sky.appendChild(star);
+}
+
+// ===== WATER RIPPLES =====
+const water = document.getElementById('water');
+function startRipples() {
+  function addRipple() {
+    const ripple = document.createElement('div');
+    ripple.className = 'ripple';
+    ripple.style.left = (Math.random() * 80 + 10) + '%';
+    ripple.style.top = (Math.random() * 60 + 10) + '%';
+    ripple.style.width = '20px';
+    ripple.style.height = '10px';
+    ripple.style.animationDelay = '0s';
+    water.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 4000);
+  }
+  // Add ripples periodically
+  setInterval(addRipple, 800);
+  // Seed a few immediately
+  for (let i = 0; i < 3; i++) {
+    setTimeout(addRipple, i * 300);
+  }
+}
+
+// ===== GATE LANTERNS =====
+const gateLanterns = document.getElementById('gate-lanterns');
+const lanternColors = ['#E53935', '#F9A825', '#66BB6A', '#E53935', '#F9A825', '#66BB6A'];
+lanternColors.forEach((color, i) => {
+  const lantern = document.createElement('div');
+  lantern.className = 'lantern';
+  lantern.style.position = 'relative';
+  lantern.innerHTML = `
+    <div class="lantern-string"></div>
+    <div class="lantern-body" style="background: radial-gradient(${color}, ${color}88); animation-delay: ${i * 0.4}s;"></div>
+  `;
+  gateLanterns.appendChild(lantern);
+});
+
+// ===== PUPPET HOVER ANIMATION =====
+document.querySelectorAll('.puppet').forEach(puppet => {
+  // Idle bobbing animation
+  const delay = Math.random() * 2;
+  puppet.style.animation = `puppet-bob 2.5s ease-in-out ${delay}s infinite alternate`;
+});
+
+// Add puppet bobbing keyframes
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes puppet-bob {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-6px); }
+  }
+`;
+document.head.appendChild(style);
+</script>
+</body>
+</html>

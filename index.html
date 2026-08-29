@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>🎭 Đạo Diễn Múa Rối Nước — Water Puppet Director</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* ========== RESET & BASE ========== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+body {
+  font-family: 'Be Vietnam Pro', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0a0a12;
+  color: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ========== COLOR PALETTE (CSS Custom Properties) ========== */
+:root {
+  --wood-dark:      #3E2723;
+  --wood-mid:       #5D4037;
+  --folk-red:       #C62828;
+  --folk-red-light: #EF5350;
+  --folk-gold:      #FFD54F;
+  --folk-green:     #2E7D32;
+  --overlay-bg:     rgba(10, 10, 18, 0.85);
+  --overlay-light:  rgba(10, 10, 18, 0.6);
+  --btn-primary:    #C62828;
+  --btn-hover:      #E53935;
+  --text-primary:   #FFFDE7;
+  --text-secondary: #B8E8F0;
+}
+
+/* ========== STAGE (full viewport) ========== */
+#stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* 3D Canvas will be injected here */
+#canvas-container {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Sky gradient — warm Vietnamese sunset */
+#sky {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 55%;
+  background: linear-gradient(
+    180deg,
+    #1a0a2e 0%,
+    #2d1b4e 20%,
+    #6b3a6e 40%,
+    #c0524e 60%,
+    #e8854a 75%,
+    #f4b860 90%,
+    #fdd98a 100%
+  );
+  z-index: 0;
+}
+
+#moon {
+  position: absolute;
+  top: 8%;
+  right: 15%;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #FFFDE7, #FFD54F);
+  box-shadow: 0 0 40px 15px rgba(255, 213, 79, 0.3);
+  z-index: 1;
+}
+
+.star {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: #FFFDE7;
+  border-radius: 50%;
+  animation: twinkle 2s ease-in-out infinite alternate;
+}
+@keyframes twinkle {
+  from { opacity: 0.3; }
+  to   { opacity: 1; }
+}
+
+/* ========== LANTERNS ========== */
+.lantern {
+  position: absolute;
+  z-index: 2;
+}
+.lantern-body {
+  width: 28px;
+  height: 38px;
+  border-radius: 50%;
+  position: relative;
+  animation: lantern-sway 3s ease-in-out infinite alternate;
+}
+.lantern-body::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 6px;
+  background: var(--folk-gold);
+  border-radius: 2px 2px 0 0;
+}
+.lantern-body::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 8px;
+  background: var(--folk-gold);
+}
+.lantern-string {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  width: 1px;
+  height: 20px;
+  background: var(--folk-gold);
+}
+@keyframes lantern-sway {
+  from { transform: rotate(-5deg); }
+  to   { transform: rotate(5deg); }
+}
+
+/* ========== UI OVERLAY ========== */
+#ui-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+#top-controls {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+}
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: none;
+  background: var(--overlay-bg);
+  color: var(--text-primary);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.icon-btn:hover {
+  background: var(--overlay-light);
+}
+#show-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--overlay-bg);
+  padding: 6px 14px;
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: auto;
+}
+
+#webmcp-status {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  background: var(--overlay-bg);
+  padding: 5px 10px;
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4CAF50;
+}
+.status-dot.offline {
+  background: #FF9800;
+}
+
+#drawer-tab {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 24px;
+  background: var(--overlay-bg);
+  border-radius: 14px 14px 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--folk-gold);
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.2s;
+  z-index: 12;
+  user-select: none;
+}
+#drawer-tab:hover {
+  background: var(--overlay-light);
+}
+
+#saved-drawer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 160px;
+  background: var(--overlay-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255,213,79,0.2);
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+  z-index: 11;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+}
+#saved-drawer.open {
+  transform: translateY(0);
+}
+#saved-drawer h3 {
+  font-size: 0.75rem;
+  color: var(--folk-gold);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.shows-list {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  flex: 1;
+  padding-bottom: 4px;
+}
+.show-card {
+  flex: 0 0 140px;
+  background: rgba(46, 154, 182, 0.15);
+  border: 1px solid rgba(109, 213, 237, 0.3);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.show-card:hover {
+  border-color: var(--folk-gold);
+  transform: translateY(-2px);
+}
+.show-card .card-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.show-card .card-meta {
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+}
+
+/* ========== STARTUP GATE ========== */
+#gate {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: radial-gradient(ellipse at center, #1a0a2e 0%, #0a0a12 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  text-align: center;
+  padding: 20px;
+  transition: transform 0.8s ease;
+}
+#gate.hidden {
+  transform: translateY(-100%);
+}
+#gate-title {
+  font-size: clamp(1.5rem, 5vw, 2.5rem);
+  font-weight: 800;
+  color: var(--folk-gold);
+  text-shadow: 0 2px 12px rgba(249, 168, 37, 0.4);
+  line-height: 1.3;
+}
+#gate-subtitle {
+  font-size: clamp(0.8rem, 2.5vw, 1rem);
+  color: var(--text-secondary);
+  max-width: 400px;
+}
+#gate-btn {
+  margin-top: 10px;
+  padding: 16px 40px;
+  font-size: clamp(1rem, 3vw, 1.3rem);
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--btn-primary);
+  border: 3px solid var(--folk-gold);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 6px 24px rgba(198, 40, 40, 0.4);
+  min-width: 200px;
+}
+#gate-btn:hover {
+  background: var(--btn-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(198, 40, 40, 0.6);
+}
+#gate-btn:active {
+  transform: translateY(0);
+}
+#gate-lanterns {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 80px;
+  display: flex;
+  justify-content: space-around;
+  padding-top: 10px;
+}
+#gate-chars {
+  font-size: clamp(2rem, 8vw, 4rem);
+  letter-spacing: 12px;
+  margin-top: 8px;
+}
+#gate-footer {
+  position: absolute;
+  bottom: 16px;
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.3);
+}
+
+/* ========== ORIENTATION HINT ========== */
+#orientation-hint {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(10, 10, 18, 0.95);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+}
+#orientation-hint .rotate-icon {
+  font-size: 48px;
+  animation: rotate-phone 2s ease-in-out infinite;
+}
+@keyframes rotate-phone {
+  0%, 100% { transform: rotate(0deg); }
+  50%      { transform: rotate(90deg); }
+}
+#orientation-hint p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+@media (orientation: portrait) {
+  #orientation-hint { display: flex; }
+}
+@media (min-width: 900px) {
+  #orientation-hint { display: none !important; }
+}
+
+/* ========== TỄU 4TH WALL ========== */
+#teu-popup {
+  position: fixed;
+  bottom: 20%;
+  left: -350px;
+  z-index: 50;
+  background: var(--overlay-bg);
+  border: 2px solid var(--folk-gold);
+  border-radius: 16px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+  max-width: 280px;
+}
+#teu-popup.show {
+  left: 16px;
+}
+#teu-popup .teu-face {
+  font-size: 36px;
+}
+#teu-popup .teu-speech {
+  font-size: 0.75rem;
+  color: var(--folk-gold);
+  line-height: 1.4;
+}
+#teu-popup .teu-speech small {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.6rem;
+  margin-top: 2px;
+  font-style: italic;
+}
+
+::-webkit-scrollbar { height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,213,79,0.3); border-radius: 2px; }
+
+/* 3D Emoji element for sleep Zzz */
+.floating-emoji {
+  position: absolute;
+  font-size: 24px;
+  color: white;
+  pointer-events: none;
+  z-index: 20;
+  animation: floatUp 2s ease-out forwards;
+}
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+}
+</style>
+</head>
+<body>
+
+<div id="orientation-hint">
+  <div class="rotate-icon">📱</div>
+  <p>Xoay ngang để xem sân khấu<br><small>Rotate to landscape for the stage</small></p>
+</div>
+
+<div id="gate">
+  <div id="gate-lanterns"></div>
+  <div id="gate-title">🎭 Đạo Diễn<br>Múa Rối Nước</div>
+  <div id="gate-subtitle">Sân khấu rối nước AI — Hãy chỉ đạo buổi biểu diễn của riêng bạn!<br><small>AI Water Puppet Stage — Direct your own show!</small></div>
+  <div id="gate-chars">🎭🐉🐟👨‍🌾</div>
+  <button id="gate-btn">🔊 Mở Màn — Enter Stage</button>
+  <div id="gate-footer">WebMCP Challenge 2026 · Made with ❤️ in Việt Nam</div>
+</div>
+
+<div id="stage">
+  <div id="sky">
+    <div id="moon"></div>
+    <div id="stars-container"></div>
+  </div>
+  <div class="lantern" style="left: 5%; top: 32%;">
+    <div class="lantern-string"></div>
+    <div class="lantern-body" style="background: radial-gradient(var(--folk-red-light), var(--folk-red));"></div>
+  </div>
+  <div class="lantern" style="right: 8%; top: 28%;">
+    <div class="lantern-string"></div>
+    <div class="lantern-body" style="background: radial-gradient(var(--folk-gold), #e65100);"></div>
+  </div>
+  <div class="lantern" style="left: 20%; top: 35%;">
+    <div class="lantern-string"></div>
+    <div class="lantern-body" style="background: radial-gradient(#66BB6A, var(--folk-green));"></div>
+  </div>
+  <div id="canvas-container"></div>
+</div>
+
+<div id="ui-overlay">
+  <div id="top-controls">
+    <button class="icon-btn" id="mute-btn" title="Tắt/Bật âm thanh">🔊</button>
+    <div id="show-name">🎬 Buổi diễn mới</div>
+  </div>
+  <div id="webmcp-status">
+    <span class="status-dot offline" id="status-dot"></span>
+    <span id="status-text">WebMCP: Offline</span>
+  </div>
+  <div id="drawer-tab">📜 Vở Diễn — Saved Shows</div>
+  <div id="saved-drawer">
+    <h3>📜 Vở diễn đã lưu — Saved Shows</h3>
+    <div class="shows-list" id="shows-list"></div>
+  </div>
+</div>
+
+<div id="teu-popup">
+  <div class="teu-face">🎭</div>
+  <div class="teu-speech">
+    "Đạo diễn ơi, rối tay em mỏi rồi!"
+    <small>"Director, my arms are tired!"</small>
+  </div>
+</div>
+
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
