@@ -1,252 +1,250 @@
-# BUILD SPEC: The AI Water Puppet Director (Đạo Diễn Múa Rối Nước)
+# BUILD SPEC: Sân Chơi — Traditional Vietnamese Games, Directed by AI
 
-## 1. TECH STACK & DEPLOYMENT
-- **Core:** Vanilla TypeScript + Vite. 
-  - *Rationale:* 5-day deadline means zero time for boilerplate. React/Next.js DOM-sync overhead is useless for a canvas-first 3D app. Vite is fast, outputs static files, works perfectly for solo devs.
-- **3D Engine:** Three.js (npm). 
-  - *Rationale:* Built-in water shaders. Billboarding 2D sprites is trivial. 
-- **Animation:** GSAP. 
-  - *Rationale:* Writing manual `requestAnimationFrame` tweens is a time sink. GSAP handles sequential timelines cleanly.
-- **Storage:** `localStorage`. 
-  - *Rationale:* No backend required. Fits the free constraint perfectly.
-- **Deployment:** GitHub Pages. 
-  - *Rationale:* Free, zero config with Vite base path, easy CI/CD.
+**Former project codename:** water-puppet (re-scoped 2026-08-29).
+**New concept:** a WebMCP agent-native web app that lets an AI agent (ChatGPT desktop in-app browser) host classic **trò chơi dân gian** (traditional Vietnamese folk games) for kids — choosing the game, setting up, and acting as the game master.
 
-## 2. REPO / FILE STRUCTURE
-Keep it flat, pragmatic.
+---
+
+## 1. THESIS (why this wins the WebMCP Challenge)
+
+The old single-puppet-stage idea had a thin WebMCP surface (5 tools, one scene).
+Sân Chơi fixes that with a **hub of full games**, each exposing a rich, turn-based,
+agent-driveable tool surface. Judges weight **WebMCP Leverage** + **Execution** equally:
+
+- **Leverage:** every game has its own `registerTool` namespace → 3 games × 6–8 tools
+  each = a genuinely non-trivial, working WebMCP integration (not a demo stub).
+- **Execution:** each game is fully playable, animated (GSAP/Three.js), and persists
+  to `localStorage` — runnable end to end with zero backend. Perfect for a 5-day build.
+
+**Agent role = "Game Master" (Người Xướng Trò).** The agent doesn't play — it *hosts*:
+it setups the board, rolls dice, calls the play-by-play, keeps score, and manages
+turn order. Kids press one button to make their move.
+
+---
+
+## 2. TECH STACK & DEPLOYMENT
+
+- **Core:** Vanilla TypeScript + Vite (static, no backend). Kept from original spec.
+- **Rendering:** Three.js for 3D game scenes + GSAP for UI/choreography tweening.
+  (Games also render fine as 2D canvas/DOM — Three.js stays where it earns its keep.)
+- **Storage:** `localStorage` per-game saves + a global "games played" ledger.
+- **Hosting:** decided separately by Tri (NOT GitHub Pages — see §12). Static build = drop-in anywhere (Netlify, Vercel, Cloudflare, S3).
+- **WebMCP:** `document.modelContext.registerTool` (Chrome 150+ surface). Serverless.
+
+---
+
+## 3. REPO STRUCTURE (game-hub architecture)
+
 ```text
-├── public/
-│   ├── assets/
-│   │   ├── puppets/ (teu.png, dragon.png, farmer.png, fish.png)
-│   │   ├── audio/ (bgm.mp3, splash.wav, sneeze.wav)
-│   │   └── textures/ (waternormals.jpg)
+├── index.html                # Hub welcome screen
 ├── src/
-│   ├── main.ts         # Entry, WebMCP init, fallback logic
-│   ├── scene.ts        # Three.js setup (lights, camera, water)
-│   ├── puppet.ts       # Sprite billboarding, stick geometry
-│   ├── tools.ts        # WebMCP schemas and tool registration
-│   ├── state.ts        # localStorage read/write, TS types
-│   ├── animation.ts    # GSAP queue orchestration
-│   ├── audio.ts        # HTMLAudio wrapper
-│   └── ui.ts           # Simple DOM overlay
-├── index.html
-├── package.json
-├── tsconfig.json
-└── vite.config.ts
+│   ├── main.ts               # Entry: hub bootstrap + WebMCP init + fallback
+│   ├── hub.ts                # Game launcher screen (cards grid)
+│   ├── webmcp.ts             # Tool registration wrapper (single choke point)
+│   ├── games/
+│   │   ├── index.ts          # registry: { id, name, sceneBuilder, tools[] }
+│   │   ├── o-an-quan/        # Ô ăn quan — mancala/strategy
+│   │   │   ├── scene.ts
+│   │   │   ├── rules.ts      # pure game logic (testable, no DOM)
+│   │   │   └── tools.ts      # WebMCP tool defs + executors
+│   │   ├── bau-cua/          # Bầu cua tôm cá — dice/guessing
+│   │   │   ├── scene.ts
+│   │   │   ├── rules.ts
+│   │   │   └── tools.ts
+│   │   └── rong-ran/         # Rồng rắn lên mây — chase/fun
+│   │       ├── scene.ts
+│   │       ├── rules.ts
+│   │       └── tools.ts
+│   ├── ui.ts                 # shared overlay/toast components
+│   └── audio.ts              # synth + playback (reuse existing make_audio.py)
+├── public/assets/…
+├── vite.config.ts            # base path configurable per host
+└── package.json
 ```
 
-## 3. WEBMCP TOOL DEFINITIONS
-Assuming the `document.modelContext.registerTool({name, description, inputSchema, execute})` signature. 
+Games register *their* tools in `games/<g>/tools.ts`; `webmcp.ts` imports the
+registry and registers **all** tools under namespaced names (see §5).
 
-```json
-// Tool: list_cast
-{
-  "name": "list_cast",
-  "description": "Returns available traditional Vietnamese water puppet characters.",
-  "inputSchema": { "type": "object", "properties": {} }
-}
+---
 
-// Tool: spawn_puppet
-{
-  "name": "spawn_puppet",
-  "description": "Adds a puppet to the water stage at given coordinates (-10 to 10).",
-  "inputSchema": {
-    "type": "object",
-    "properties": {
-      "character": { "type": "string", "enum": ["teu", "dragon", "farmer", "fish"] },
-      "id": { "type": "string", "description": "Unique ID for this puppet instance" },
-      "x": { "type": "number", "description": "Left/Right position (-10 to 10)" },
-      "z": { "type": "number", "description": "Depth position (-10 to 10)" }
-    },
-    "required": ["character", "id", "x", "z"]
-  }
-}
-
-// Tool: choreograph_move
-{
-  "name": "choreograph_move",
-  "description": "Queues an action for a specific puppet on stage.",
-  "inputSchema": {
-    "type": "object",
-    "properties": {
-      "id": { "type": "string" },
-      "action": { "type": "string", "enum": ["splash", "spin", "chase", "wave", "jump"] },
-      "targetId": { "type": "string", "description": "Required only if action is 'chase'" }
-    },
-    "required": ["id", "action"]
-  }
-}
-
-// Tool: set_music
-{
-  "name": "set_music",
-  "description": "Plays traditional background music.",
-  "inputSchema": {
-    "type": "object",
-    "properties": {
-      "track": { "type": "string", "enum": ["dan_bau", "gong", "silent"] }
-    },
-    "required": ["track"]
-  }
-}
-
-// Tool: save_show
-{
-  "name": "save_show",
-  "description": "Saves current stage setup and move queue to local storage.",
-  "inputSchema": {
-    "type": "object",
-    "properties": {
-      "showName": { "type": "string" }
-    },
-    "required": ["showName"]
-  }
-}
-```
-
-## 4. STATE MODEL
-Direct mutations in memory for speed, serialize on `save_show`.
+## 4. GAME REGISTRY / HUB MODEL
 
 ```typescript
-type Character = 'teu' | 'dragon' | 'farmer' | 'fish';
-type ActionType = 'splash' | 'spin' | 'chase' | 'wave' | 'jump';
-
-interface PuppetState {
-  id: string;
-  character: Character;
-  x: number;
-  z: number;
-}
-
-interface MoveAction {
-  id: string;
-  action: ActionType;
-  targetId?: string; // Used for 'chase'
-}
-
-interface ShowState {
-  name: string;
-  music: string;
-  cast: PuppetState[];
-  moves: MoveAction[]; // The choreography queue
-}
-
-// Global runtime state
-interface AppState {
-  activeShow: ShowState;
-  savedShows: Record<string, ShowState>;
+interface GameDef {
+  id: string;                 // "o-an-quan", "bau-cua", "rong-ran"
+  name: string;               // Vietnamese display name
+  nameEn: string;
+  minPlayers: number; maxPlayers: number;
+  description: string;        // shown on hub card + fed to agent
+  buildScene: (container: HTMLElement) => void;
+  tools: WebMCPToolGroup[];   // this game's WebMCP tools
+  saveKey: string;            // localStorage namespace
 }
 ```
 
-## 5. 3D SCENE SPEC
-- **Water Plane:** `three/examples/jsm/objects/Water.js`. Flat plane geometry + normal map (`waternormals.jpg`). Beautiful, cheap on GPU.
-- **Puppets:** `THREE.Sprite` with transparent PNGs (1024x1024 max). Free billboarding (always faces camera), looks like a flat 2D wooden puppet.
-- **The Stick:** `THREE.CylinderGeometry`, color dark brown, attached below the sprite extending below the water plane to sell the illusion.
-- **Lighting:** One `DirectionalLight` (spotlight) + `AmbientLight`.
-- **Camera:** `PerspectiveCamera`, fixed angled down ~30 degrees looking at `(0,0,0)`. No user orbit controls to keep the stage illusion.
-- **Performance Budget:** 
-  - `renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))` for mid-range phones.
-  - Hard cap at 15 puppets. 
-  - Water segments kept to 128x128.
-
-## 6. ANIMATION SYSTEM
-- **Queue Loop:** Agent pushes moves. GSAP timeline executes them sequentially.
-- **Tweens:**
-  - `splash`: Quick Y-axis up/down + trigger 3D particle burst (simple geometry) at base.
-  - `spin`: Tween `rotation.y` 360 degrees.
-  - `chase`: Tween X/Z coordinates to `targetId` coordinates over 1.5s.
-  - `wave`: Ping-pong rotation on Z-axis.
-  - `jump`: Parabolic arc on Y-axis.
-- **Conflict Handling:** If `chase` target doesn't exist, kill tween and trigger "Tangled Strings" hook.
-
-## 7. AUDIO
-- Native HTML5 Audio. Avoid heavy libraries. 
-- **Assets:** CC0 Đàn Bầu or folk samples. 
-- **Mute Policy:** iOS/Chrome requires user interaction. UI overlay must have a giant "Unmute & Enter Stage" button at startup.
-
-## 8. UI/UX
-- Full-screen canvas. Mobile-first landscape orientation.
-- Minimalist DOM overlay (absolute positioning, `pointer-events: none` where applicable).
-- Top-left: Mute toggle, Current Show Name.
-- Bottom: Drawer for "Saved Shows". 
-- Agent interaction happens in the native browser/client interface (e.g., ChatGPT desktop).
-
-## 9. FUNNY-HOOK SPEC
-Cheap to build, high ROI for judging.
-1. **Tễu's 4th Wall:** If agent queues > 5 moves without saving, Chú Tễu slides in from the screen edge: *"Đạo diễn ơi, rối tay em mỏi rồi!"* (Director, my arms are tired!).
-2. **Tangled Strings:** If tool execution errors (e.g., bad target), puppets jiggle erratically and freeze. Console: `String tangled. Reboot.`
-3. **Fish Panic:** If Dragon spawns within 3 units of Fish, Fish overrides queue, splashes, and flees to the edge.
-4. **Dragon Sneeze:** 10% chance when Dragon splashes, it plays a sneeze audio and flashes red instead of splashing water.
-
-## 10. TESTING & DEMO PLAN
-- **QA Checklist:** Expose `window.debugTools` to manually call `spawn_puppet` and `choreograph_move` from DevTools to verify 3D/GSAP logic independently of WebMCP.
-- **Devpost Video Script (2 mins):**
-  - [0:00] Show empty stage, open Agent chat.
-  - [0:15] Prompt: "Make Tễu introduce a dragon. Dragon chases fish."
-  - [0:30] Screen shows tools firing; puppets pop up and animate.
-  - [1:15] Trigger the "Fish Panic" hook.
-  - [1:45] Agent saves show. Refresh page, click "Play Saved Show" to prove localStorage persistence.
-
-## 11. 5-DAY MILESTONES
-*(Aug 29 - Sep 3. Hard deadline 1pm PT)*
-- **Day 1:** Scaffolding. Vite, Three.js water shader, sprite billboarding.
-- **Day 2:** WebMCP Bridge. Register tools. Build fallback debug tools in DevTools.
-- **Day 3:** Animation & State. Wire GSAP queue. Implement splash, chase, jump. Hook up localStorage.
-- **Day 4:** Audio, Hooks & Polish. Add HTML overlay, audio toggles, Tễu/Fish jokes.
-- **Day 5:** QA & Demo. Fix mobile layout, record video, write README, deploy to GitHub Pages.
-- **Buffer (Sep 3 Morning):** Final sanity checks. Ship it.
-
-## 12. RISKS & MITIGATIONS
-- **WebMCP API Uncertainty:** Draft APIs shift. *Mitigation:* Abstract tool registration into a single wrapper function.
-- **Asset Loading:** High-res PNGs crash old phones. *Mitigation:* Compress all sprites to 512x512.
-- **Scope Creep:** *Mitigation:* Strict 4 character / 5 action limit. Zero physics simulation.
+Hub = `state.games: GameDef[]` in `games/index.ts`. `main.ts` renders the card grid,
+then the agent (via a `start_game` tool) picks one and its scene loads.
 
 ---
 
-## 13. UNKNOWNS TO VERIFY (First 2 Hours Checklist)
-1. [ ] **API Surface:** Verify if `document.modelContext.registerTool` or `navigator.webmcp.registerTool` is the correct signature in the target client.
-2. [ ] **Origin Trials:** Does the API require a Chrome Origin Trial flag or specific flags to be enabled?
-3. [ ] **Execution Context:** Does the `execute()` callback run directly in the main thread (DOM access allowed) or in an isolated worker?
-4. [ ] **Security Context:** Must the site be served over HTTPS / localhost to register tools? (GitHub Pages handles HTTPS, but good to know for local dev).
-5. [ ] **Schema Format:** Does `inputSchema` exactly mirror JSON Schema draft-07?
-6. [ ] **Tool Return Types:** Does `execute()` need to return a string, JSON, or a Promise resolving to a specific format?
-7. [ ] **Agent UI:** How does the user actually prompt the agent? (Is the chat panel injected by the browser, or do I need to build a custom UI hooking into an LLM endpoint?)
-8. [ ] **Rate Limits:** Are there rate limits on how fast the agent can call `choreograph_move`? 
-9. [ ] **Three.js Water:** Verify `Water.js` renders correctly on a mobile browser without shader compilation errors.
-10. [ ] **Autoplay Audio:** Confirm AudioContext unlocking via a single click anywhere on the `<body>` works reliably on iOS Safari.
+## 5. WEBMCP TOOL NAMESPACING
 
----
+Keep the flat `document.modelContext` surface but namespace by game so the agent
+knows domain context and the schema stays shallow:
 
-## 14. VERIFIED (2026-08-28) — WebMCP API surface + Challenge rules
-
-### API surface (answers to the "first 2 hours" checklist)
-1. **`document.modelContext.registerTool(tool, {signal})` is correct.** `navigator.modelContext` was **deprecated in Chrome 150** in favor of `document.modelContext` — ignore older tutorials using `navigator.webmcp`.
-2. **Chrome origin trial exists** (Chrome 149+, "Intent to Experiment"). BUT the challenge's supported path: **ChatGPT desktop app in-app browser supports WebMCP by default** — no token needed. Alternative: Chrome with origin trial flag.
-3. **execute() runs as normal async JS in the page context** (main thread, DOM access allowed). Signature: `execute: async (input) => string`.
-4. **HTTPS required** (secure context) — GitHub Pages is fine. Localhost works for dev.
-5. **inputSchema = JSON Schema** (`type: "object", properties, required`).
-6. **execute() returns a string** (e.g. ``return `Added to-do: ${text}` ``) — can be a JSON string for structured results.
-7. **Agent UI is the ChatGPT desktop in-app browser** — the page only registers tools; the chat panel lives in the app. Page can listen for `document.modelContext.addEventListener("toolchange", ...)`.
-8. **Tool object also supports `annotations: { readOnlyHint, untrustedContentHint }`.** Unregister via `AbortController` (Chrome 153+: unregister without breaking in-flight executions).
-9. **Cross-origin iframes:** tool registration disabled by default; delegate with Permissions Policy `allow="tools"` + `exposedTo` array.
-10. **TS typings:** `webmcp-types` npm package. **Testing without ChatGPT:** Codex CLI has WebMCP integration (codex.danielvaughan.com article) — use it to exercise tools headlessly.
-
-Example (verbatim from Chrome docs):
-```js
-const addTodoTool = {
-  name: "addTodo",
-  description: "Add a new item to the to-do list",
-  inputSchema: { type: "object", properties: { text: { type: "string" } } },
-  execute: async ({ text }) => `Added to-do: ${text}`,
-  annotations: { readOnlyHint: false, untrustedContentHint: true },
-};
-const controller = new AbortController();
-await document.modelContext.registerTool(addTodoTool, { signal: controller.signal });
+```
+o_an_quan_new_game        # reset board
+o_an_quan_pick_bin        # { bin: number } -> scoop & drop, returns board JSON
+o_an_quan_state           # read current board
+o_an_quan_score           # who's winning
+bau_cua_roll              # 3 dice, returns { symbols: [...], counts: {...} }
+bau_cua_place_bet         # { symbol, points } (fake points only)
+bau_cua_resolve           # settle bets, announce outcome
+rong_ran_start            # { length } spawn dragon-snake
+rong_ran_chase            # { speed } move the snake; doctor tries to catch tail
+rong_ran_turn             # change direction / emit "thầy thuốc" chant
 ```
 
-### Challenge rules (webmcp.devpost.com/rules)
-- **Registration & Submission:** Aug 25, 2026 11:00 PT → **Sep 3, 2026 13:00 PT (= Sep 4 03:00 GMT+7)**. Judging Sep 4–21, winners ~Sep 23.
-- **Eligibility:** individuals at age of majority, resident of an OpenAI-API-supported country (Vietnam OK — fully accessible tier per 2026 Asia tracker; verify at registration). Excluded: Brazil, China, HK, Quebec, Russia, Cuba, Iran, North Korea, Syria, Venezuela + OFAC-listed.
-- **Submission requirements:** public repo (GitHub/GitLab/Bitbucket) with ALL source + assets + instructions; **open-source license file visible in repo About section**; **working demo URL** (login creds if private); brief explanation of WebMCP implementation; original work.
-- **Access to WebMCP:** ChatGPT desktop app (in-app browser supports WebMCP by default) — this is the judging/demo environment.
-- **Judging:** WebMCP Leverage + Execution, equally weighted, judges' sole discretion.
+**Global tools** (any game):
+```
+start_game       # { game: "o-an-quan" | "bau-cua" | "rong-ran" } -> load scene
+list_games       # enum of available games + player counts
+set_music        # { track } ambient BGM (reuse
+save_progress    # { note } save game state to localStorage
+```
+
+All `execute(input)` return a **JSON string** (`{ status, message, board?, ... }`)
+so the agent gets structured state back. This is a deliberate "WebMCP Leverage"
+signal — the tool surface returns live game state, not static strings.
+
+---
+
+## 6. GAME 1 — Ô ăn quan (Vietnamese mancala)   [TIER 1, core]
+
+The flagship: purely strategic, turn-based, ideal WebMCP fit.
+
+- **Board:** 1 row? No — classic layout = 5 small pits ("dân") per side + 2 big
+  "quan" (mandarin) pits at the ends (10 dân + 2 quan). Alternative 6-pit variants exist; standardize on **5 pits + 2 quan** in v1.
+- **Setup:** each small pit = 5 seeds; each quan = 10 seeds (2 quan). Player owns
+  the 5 pits on their side.
+- **Move (`o_an_quan_pick_bin {bin}`):** player picks a pit on their side; seeds are
+  scooped and **deposited one per pit counter-clockwise**. If the last seed lands in
+  an empty small pit on the player's side, the player **captures** the seeds in the
+  pit directly opposite. Landing in a quan is a safe way to end a move.
+- **Capture rules:** capture the opposite pit's seeds into your score pile. If a
+  captured pit itself had seeds, keep going; if none, the run ends.
+- **Win:** when both quan are captured or a player can't move on their turn, the
+  player with more captured seeds wins. 1 quan = 10 seeds (or 5, house rule — pick 10).
+- **Agent surface:** agent *reads* state and *calls* picks on the child's behalf, or
+  suggests moves ("Try bin 3! Your capture run wins you 4 seeds").
+- **UI:** top-down 2D board, seeds as little stones, GSAP splash on capture, subtle
+  Three.js if we want a tilted 3D board — keep it optional.
+- **Pure logic in `rules.ts`** returning `{ board, captured, winner? }` → unit-testable
+  and drives both img and the 3D scene.
+
+---
+
+## 7. GAME 2 — Bầu cua tôm cá (dice betting)   [TIER 1, core]
+
+Tết's iconic dice game, molecule-swapped to be kid-safe.
+
+- **6 symbols:** bầu (gourd) · cua (crab) · tôm (shrimp) · cá (fish) · gà (chicken) · hươu/nai (deer).
+- **Setup:** player + agent each get a pile of **fake points** (e.g. 100). Three dice.
+- **Bet (`bau_cua_place_bet { symbol, points }`):** stake fake points on 1+ symbols.
+- **Roll (`bau_cua_roll`):** 3 dice land; payouts = count-of-symbol on the dice
+  (appears on 1 die = 1×, 2 dice = 2×, 3 dice = 3× your stake). No match = lose stake.
+- **Turn loop:** bet → roll → resolve → switch who deals. Agent rolls and calls
+  the reveal with fanfare ("Bầu! Bầu! Cua!" — classic xướng).
+- **UI:** 3D dice tumble (Three.js earns its place here), a betting mat, points
+  counters, GSAP coin/point animation.
+- **Edge:** no real-money framing anywhere; it's "giải thưởng" (prize points).
+
+---
+
+## 8. GAME 3 — Rồng rắn lên mây (dragon-snake to the clouds)   [STRETCH]
+
+Chase/sing game. Highest animation payoff, lighter on turn-based logic — good
+"wow" demo but lower WebMCP leverage than Games 1–2, so it's stretch.
+
+- **Setup (`rong_ran_start { length }`):** spawn a snaking "dragon" (chain of
+  segments — the kids) and a "thầy thuốc" (doctor) marker at the head.
+- **Chant:** `rong_ran_start`/`rong_ran_chase` print the verse:
+  *"Rồng rắn lên mây — Có cây núc nác..."*
+- **Chase (`rong_ran_chase { speed }`):** doctor chases the tail; snake weaves.
+  Catch the tail = doctor wins, next round.
+- **UI:** snaky joints tweened with GSAP along a path; toon style.
+- **Agent surface:** thin (start/chase/turn). Good for video but not a judging anchor.
+
+---
+
+## 9. AUDIO (reuse existing work)
+
+- Keep `src/audio.ts` + `make_audio.py`.
+- Add per-game jingles: Ô ăn quan win chime, bầu cua reveal roll swell, rồng rắn chant.
+- All synthesized/CC0; no heavy audio libs. Autoplay unlock via the "Enter" button.
+
+---
+
+## 10. UI / UX
+
+- Hub: full-screen card grid (mobile-first landscape), each game card = icon + name +
+  min/max players. Tap a card OR an agent can `start_game`.
+- In-game overlay: top corner = current game name + turn banner; bottom = back-to-hub.
+- "Kid mode": large buttons, big friendly fonts, Vietnamese + English labels.
+- Agent interaction lives in the ChatGPT desktop in-app browser; the page just
+  registers tools + renders results. Fallback `window.__debugTools` for dev/QA.
+- Full-screen canvas per scene; minimal DOM chrome (pointer-events none).
+
+---
+
+## 11. FUNNY-HOOKS (kept, per-game)
+
+- **Ô ăn quan:** agent suggests a losing move → a stone "grumbles" and wobbles; banner
+  *"Ô quan nói: đừng hấp tấp!"* (the mandarin says: don't be hasty!).
+- **Bầu cua:** roll shows all 3 same symbols → screen shake + *"XỐC! BA CON!"*.
+- **Rồng rắn:** tail caught → doctor does a little victory dance, snake deflates.
+- **Global:** agent queues many actions without saving → "Người xướng trò bị rối" toast.
+
+---
+
+## 12. HOSTING (DECISION PENDING — not GitHub Pages)
+
+Tri said Pages is out; host decision comes later. Vite static output is portable:
+- Netlify/Vercel: zero config, free.
+- Cloudflare Pages: free, easy with existing Cloudflare access.
+- S3/CloudFront or a cheap VPS.
+`vite.config.ts` already flexible; set `base` to match final host. Keep the deploy
+workflow off until hosting is chosen.
+
+---
+
+## 13. MILESTONES (re-scoped; deadline Sep 3 13:00 PT = Sep 4 03:00 GMT+7)
+
+Today is Aug 29 (~day 1 of the original 5-day plan). Re-scope counts from now:
+- **Day 1 (today):** hub scaffold + `webmcp.ts` namespacing + game registry.
+- **Day 2:** Ô ăn quan — `rules.ts` (pure, tested) + board scene + tools.
+- **Day 3:** Bầu cua — dice scene + betting + resolve + tools.
+- **Day 4:** Rồng rắn (stretch) + audio jingles + funny-hooks + polish.
+- **Day 5:** QA (DevTools `__debugTools` walkthrough), video, README, pick host, deploy.
+- **Buffer:** Sep 3 morning final sanity check. Ship.
+
+---
+
+## 14. RISKS & MITIGATIONS
+
+- **Identifier mismatch / rename:** decide repo+package name before Day 2 (see memo).
+- **Ô ăn quan rule variants:** standardize the 5-pit + 2-quan layout and document the
+  exact capture rule in `rules.ts` + README so judges see a correct, complete game.
+- **Bầu cua rules ambiguity:** lock the payout table (1×/2×/3×) and document it.
+- **WebMCP API drift:** single choke point (`webmcp.ts`) — swap surface in one file.
+- **Scope:** 3 games max; Ô ăn quan + Bầu cua are the must-ship core, Rồng rắn is stretch.
+- **No backend:** everything localStorage; no auth, no leaderboard cross-session.
+
+---
+
+## 15. UNKNOWNS TO RE-VERIFY (fast)
+
+1. Repo/package rename — confirm with Tri before Day 2.
+2. Final host (affects `vite base` + deploy workflow).
+3. Whether agent should drive most moves vs. kids click themselves — affects tool
+   "read" helpers. Default: agent hosts + kids click; agent can also move on request.
