@@ -11,6 +11,7 @@ import {
   resolveBets,
 } from './rules';
 import { playSFX } from '../../audio';
+import { reducedMotion } from '../../motion';
 
 let state: BauCuaState = createBauCuaGame();
 let rootEl: HTMLElement | null = null;
@@ -73,10 +74,10 @@ function dieTexture(symbol: BauCuaSymbol): THREE.CanvasTexture {
   canvas.height = 128;
   const ctx = canvas.getContext('2d');
   if (ctx) {
-    ctx.fillStyle = '#fff8e1';
+    ctx.fillStyle = '#FFF8EC';
     ctx.fillRect(0, 0, 128, 128);
 
-    ctx.strokeStyle = '#d7ccc8';
+    ctx.strokeStyle = '#8A5A33';
     ctx.lineWidth = 6;
     ctx.strokeRect(3, 3, 122, 122);
 
@@ -189,6 +190,7 @@ function updateBauCuaView(view: BauCuaState): void {
 
   if (resultEl && !isRolling) {
     if (view.status === 'betting') {
+      resultEl.className = 'bau-result';
       if (totalStaked > 0) {
         resultEl.textContent = `Đã cược: ${totalStaked} điểm. Nhấn Lắc!`;
       } else {
@@ -261,6 +263,20 @@ function animateLoss(amount: number): Promise<void> {
 function animateDiceRoll(results: BauCuaSymbol[]): Promise<void> {
   return new Promise<void>((resolve) => {
     playSFX('dice_roll');
+
+    if (reducedMotion()) {
+      diceMeshes.forEach((mesh, i) => {
+        const targetRot = getTargetRotation(results[i]);
+        mesh.rotation.set(targetRot.x, targetRot.y, targetRot.z);
+      });
+      if (results[0] === results[1] && results[1] === results[2]) {
+        if (resultEl) {
+          resultEl.textContent = '🎉 XỐC! BA CON! 🎉';
+        }
+      }
+      resolve();
+      return;
+    }
 
     const promises = diceMeshes.map((mesh, i) => {
       return new Promise<void>((dieResolve) => {
@@ -360,7 +376,7 @@ export async function rollBauCuaDice(): Promise<BauCuaState> {
     
     // Check for triple
     if (state.lastRoll[0] === state.lastRoll[1] && state.lastRoll[1] === state.lastRoll[2]) {
-      if (rootEl) {
+      if (rootEl && !reducedMotion()) {
         gsap.fromTo(rootEl, 
           { x: -20, y: -20 }, 
           { x: 20, y: 20, duration: 0.05, yoyo: true, repeat: 10, clearProps: 'x,y' }
@@ -388,19 +404,21 @@ export async function resolveBauCua(): Promise<BauCuaState> {
     await animateLoss(-net);
   }
 
-  if (resultEl) {
-    resultEl.textContent =
-      net > 0
-        ? `🎉 Thắng +${net} điểm!`
-        : net < 0
-          ? `😢 Mất ${-net} điểm`
-          : '🤝 Hòa điểm';
-  }
-
   import('../../hub').then(h => h.markGameCompleted('bau-cua'));
 
   saveState();
   updateBauCuaView(state);
+
+  if (resultEl) {
+    resultEl.className = 'bau-result' + (net > 0 ? ' win' : '');
+    resultEl.textContent =
+      net > 0
+        ? `🎉 Thắng +${net} điểm!`
+        : net < 0
+          ? `Suýt nữa thì thắng! Mất ${-net} điểm`
+          : '🤝 Hòa điểm';
+  }
+
   return state;
 }
 
@@ -424,14 +442,16 @@ export function buildBauCuaScene(container: HTMLElement): void {
       width: 100%;
       height: 100%;
       min-height: 520px;
-      padding: 0.75rem;
+      padding: 5rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom));
       box-sizing: border-box;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: #fff8e1;
+      font-family: var(--font-body);
+      color: var(--ink);
       user-select: none;
       position: relative;
       overflow: hidden;
-      background: radial-gradient(circle at center, #2e1c14 0%, #150c08 100%);
+      background-color: var(--paper-deep);
+      background-image: repeating-linear-gradient(45deg, rgba(89,55,31,0.06) 0 6px, transparent 6px 12px),
+        repeating-linear-gradient(-45deg, rgba(89,55,31,0.06) 0 6px, transparent 6px 12px);
     }
     .bau-canvas {
       position: relative;
@@ -444,7 +464,7 @@ export function buildBauCuaScene(container: HTMLElement): void {
     }
     .bau-top {
       position: absolute;
-      top: 12px;
+      top: calc(60px + env(safe-area-inset-top));
       left: 50%;
       transform: translateX(-50%);
       display: flex;
@@ -452,14 +472,13 @@ export function buildBauCuaScene(container: HTMLElement): void {
       align-items: center;
       justify-content: center;
       padding: 0.45rem 1.4rem;
-      background: rgba(0, 0, 0, 0.55);
-      border: 1px solid rgba(255, 213, 79, 0.35);
-      border-radius: 24px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-      backdrop-filter: blur(6px);
+      background: var(--paper-bright);
+      border: 2px solid var(--wood);
+      border-radius: var(--r-pill);
+      box-shadow: var(--shadow-paper);
       z-index: 10;
       font-size: 0.95rem;
-      font-weight: 600;
+      font-weight: 700;
     }
     .bau-pill {
       display: flex;
@@ -467,8 +486,9 @@ export function buildBauCuaScene(container: HTMLElement): void {
       gap: 0.4rem;
     }
     .bau-points-val, .bau-round-val {
-      color: #ffd54f;
-      font-weight: 700;
+      color: var(--lacquer);
+      font-family: var(--font-display);
+      font-weight: 800;
       font-size: 1.1rem;
     }
     .bau-controls {
@@ -479,14 +499,24 @@ export function buildBauCuaScene(container: HTMLElement): void {
       width: 100%;
       max-width: 580px;
       z-index: 10;
+      position: relative;
     }
     .bau-result {
       font-size: 1.05rem;
       font-weight: 700;
-      color: #ffd54f;
+      color: var(--ink);
       min-height: 1.3em;
       text-align: center;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+      background: var(--paper-bright);
+      border: 2px solid var(--wood);
+      border-radius: var(--r-pill);
+      padding: 6px 14px;
+      box-shadow: var(--shadow-paper);
+      line-height: 1.3;
+    }
+    .bau-result.win {
+      background: var(--marigold-bright);
+      color: var(--ink);
     }
     .bau-mat {
       display: grid;
@@ -494,6 +524,12 @@ export function buildBauCuaScene(container: HTMLElement): void {
       grid-template-rows: repeat(2, 1fr);
       gap: 0.5rem;
       width: 100%;
+      padding: 0.5rem;
+      background: var(--paper-deep);
+      border: 2px solid var(--wood);
+      border-radius: var(--r-board);
+      box-sizing: border-box;
+      position: relative;
     }
     .bau-sym-btn {
       position: relative;
@@ -501,50 +537,51 @@ export function buildBauCuaScene(container: HTMLElement): void {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: #4e342e;
-      border: 2px solid #bcaaa4;
-      border-radius: 14px;
+      background: var(--paper-bright);
+      border: 2px solid var(--wood);
+      border-radius: var(--r-btn);
       padding: 0.6rem 0.4rem;
       cursor: pointer;
-      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
-      color: #fff8e1;
-      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      box-shadow: 0 2px 0 var(--wood);
+      color: var(--ink);
+      transition: transform var(--dur-micro), border-color var(--dur-micro), box-shadow var(--dur-micro);
     }
     .bau-sym-btn:hover {
-      background: #5d4037;
-      border-color: #ffd54f;
+      border-color: var(--marigold);
       transform: translateY(-2px);
     }
     .bau-sym-btn:active {
       transform: translateY(1px);
+      box-shadow: 0 1px 0 var(--wood);
     }
     .bau-sym-btn.active {
-      border-color: #4caf50;
-      background: #3e2723;
-      box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+      border-color: var(--leaf);
+      background: var(--paper-bright);
+      box-shadow: 0 0 0 2px var(--leaf);
     }
     .bau-sym-emoji {
-      font-size: 1.85rem;
+      font-size: 2rem;
       line-height: 1;
       margin-bottom: 2px;
     }
     .bau-sym-name {
       font-size: 0.85rem;
-      font-weight: 600;
+      font-weight: 700;
     }
     .bau-bet-badge {
       position: absolute;
       top: -6px;
       right: -6px;
-      background: #ffd54f;
-      color: #212121;
+      background: var(--lacquer);
+      color: #FFF8EC;
+      font-family: var(--font-display);
+      font-weight: 800;
       font-size: 0.75rem;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 10px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+      padding: 2px 8px;
+      border-radius: var(--r-pill);
+      border: 2px dashed rgba(255,248,236,0.7);
+      box-shadow: var(--shadow-toy);
       display: none;
-      border: 1px solid #fff;
     }
     .bau-actions {
       display: flex;
@@ -561,29 +598,31 @@ export function buildBauCuaScene(container: HTMLElement): void {
     }
     .bau-stake-label {
       font-size: 0.85rem;
-      font-weight: 600;
-      color: #d7ccc8;
+      font-weight: 700;
+      color: var(--ink);
       margin-right: 2px;
     }
     .bau-stake-btn {
-      padding: 0.35rem 0.65rem;
-      border-radius: 12px;
-      background: #3e2723;
-      border: 1px solid #8d6e63;
-      color: #d7ccc8;
-      font-size: 0.8rem;
-      font-weight: 700;
+      padding: 0.4rem 0.7rem;
+      border-radius: var(--r-pill);
+      background: var(--paper-bright);
+      border: 2px solid var(--wood);
+      color: var(--ink);
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 800;
       cursor: pointer;
-      transition: all 0.15s ease;
+      box-shadow: 0 2px 0 var(--wood);
+      transition: all var(--dur-micro) ease;
     }
     .bau-stake-btn:hover {
-      background: #4e342e;
+      background: var(--paper-deep);
     }
     .bau-stake-btn.active {
-      background: #ffd54f;
-      color: #212121;
-      border-color: #ffecb3;
-      box-shadow: 0 0 8px rgba(255, 213, 79, 0.4);
+      background: var(--marigold);
+      color: var(--ink);
+      border-color: var(--wood);
+      box-shadow: 0 2px 0 var(--wood);
     }
     .bau-btn-group {
       display: flex;
@@ -592,43 +631,47 @@ export function buildBauCuaScene(container: HTMLElement): void {
     }
     .bau-clear-btn {
       padding: 0.55rem 0.9rem;
-      border-radius: 14px;
-      background: #37474f;
-      border: 1px solid #78909c;
-      color: #eceff1;
+      border-radius: var(--r-btn);
+      background: var(--paper-bright);
+      border: 2px solid var(--wood);
+      color: var(--ink);
+      font-family: var(--font-display);
       font-size: 0.85rem;
-      font-weight: 600;
+      font-weight: 800;
       cursor: pointer;
-      transition: background 0.15s, transform 0.1s;
+      box-shadow: 0 2px 0 var(--wood);
+      transition: background var(--dur-micro), transform var(--dur-micro), box-shadow var(--dur-micro);
     }
     .bau-clear-btn:hover {
-      background: #455a64;
-      transform: translateY(-1px);
+      background: var(--paper-deep);
     }
     .bau-clear-btn:active {
-      transform: translateY(1px);
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 var(--wood);
     }
     .bau-roll {
       padding: 0.6rem 1.6rem;
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #fff;
-      background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
-      border: 2px solid #ffd54f;
-      border-radius: 20px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      font-family: var(--font-display);
+      color: #FFF8EC;
+      background: var(--lacquer);
+      border: 2px solid var(--lacquer-deep);
+      border-radius: var(--r-btn);
       cursor: pointer;
-      box-shadow: 0 4px 10px rgba(183, 28, 28, 0.5);
-      transition: all 0.15s ease;
+      box-shadow: var(--shadow-toy);
+      transition: all var(--dur-micro) ease;
     }
     .bau-roll:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 14px rgba(183, 28, 28, 0.7);
+      background: var(--lacquer-bright);
     }
     .bau-roll:active:not(:disabled) {
-      transform: translateY(1px);
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 var(--wood-deep);
     }
     .bau-roll:disabled {
-      opacity: 0.5;
+      filter: saturate(0.5);
+      box-shadow: none;
       cursor: not-allowed;
       transform: none;
     }
@@ -637,10 +680,11 @@ export function buildBauCuaScene(container: HTMLElement): void {
       top: 35%;
       left: 50%;
       transform: translate(-50%, -50%);
+      font-family: var(--font-display);
       font-size: 2.4rem;
       font-weight: 800;
-      color: #ffd54f;
-      text-shadow: 0 0 14px rgba(255, 213, 79, 0.8), 0 2px 6px rgba(0,0,0,0.8);
+      color: var(--leaf);
+      text-shadow: 0 2px 0 rgba(255,255,255,0.6);
       pointer-events: none;
       z-index: 100;
     }
@@ -649,10 +693,11 @@ export function buildBauCuaScene(container: HTMLElement): void {
       top: 35%;
       left: 50%;
       transform: translate(-50%, -50%);
+      font-family: var(--font-display);
       font-size: 2.2rem;
       font-weight: 800;
-      color: #ef5350;
-      text-shadow: 0 0 14px rgba(239, 83, 80, 0.8), 0 2px 6px rgba(0,0,0,0.8);
+      color: var(--ink-soft);
+      text-shadow: 0 2px 0 rgba(255,255,255,0.6);
       pointer-events: none;
       z-index: 100;
     }
@@ -719,7 +764,7 @@ export function buildBauCuaScene(container: HTMLElement): void {
   // Render loop
   function renderLoop() {
     if (!renderer || !scene || !camera) return;
-    if (state.status === 'betting' && !isRolling) {
+    if (state.status === 'betting' && !isRolling && !reducedMotion()) {
       for (let i = 0; i < diceMeshes.length; i++) {
         diceMeshes[i].rotation.y += 0.003 * (i % 2 === 0 ? 1 : -1);
       }
@@ -755,6 +800,11 @@ export function buildBauCuaScene(container: HTMLElement): void {
   // 6 symbol buttons grid
   const matEl = document.createElement('div');
   matEl.className = 'bau-mat';
+  for (const pos of ['tl', 'tr', 'br', 'bl']) {
+    const corner = document.createElement('div');
+    corner.className = `dh-corner ${pos}`;
+    matEl.appendChild(corner);
+  }
   betBadges.clear();
   symButtons.clear();
 

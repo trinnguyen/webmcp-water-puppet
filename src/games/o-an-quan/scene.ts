@@ -8,6 +8,7 @@ import {
   boardToJSON,
 } from './rules';
 import { playSFX } from '../../audio';
+import { reducedMotion } from '../../motion';
 
 let board: OAQBoard = createBoard();
 let rootEl: HTMLElement | null = null;
@@ -156,6 +157,9 @@ export function updateBoardView(currentBoard: OAQBoard): void {
     const pitEl = pitEls[i];
     if (pitEl) {
       renderPitSeeds(pitEl, currentBoard.pits[i]);
+      if (i === 5 || i === 11) {
+        pitEl.setAttribute('data-empty', currentBoard.pits[i] === 0 ? 'true' : 'false');
+      }
       if (
         (i >= 0 && i <= 4 && currentBoard.currentPlayer === 1) ||
         (i >= 6 && i <= 10 && currentBoard.currentPlayer === 2)
@@ -210,7 +214,7 @@ export function animateSowing(
   _seedCounts: number[]
 ): Promise<void> {
   return new Promise((resolve) => {
-    if (!rootEl || pitSequence.length === 0) {
+    if (!rootEl || pitSequence.length === 0 || reducedMotion()) {
       resolve();
       return;
     }
@@ -261,7 +265,7 @@ export function animateCapture(
   seedCount: number
 ): Promise<void> {
   return new Promise((resolve) => {
-    if (!rootEl) {
+    if (!rootEl || reducedMotion()) {
       playSFX('capture');
       resolve();
       return;
@@ -359,7 +363,7 @@ export async function driveMove(pitIndex: number, isAgent: boolean = false): Pro
     } else if (isAgent) {
       // Weak move grumble
       const targetPit = pitEls[pitIndex];
-      if (targetPit) {
+      if (targetPit && !reducedMotion()) {
         gsap.fromTo(targetPit, { rotation: -10 }, { rotation: 10, yoyo: true, repeat: 5, duration: 0.1, clearProps: 'rotation' });
       }
       const { showToast } = await import('../../ui');
@@ -368,9 +372,30 @@ export async function driveMove(pitIndex: number, isAgent: boolean = false): Pro
 
     updateBoardView(board);
     saveState();
+
+    if (isAgent && turnEl && board.status === 'playing') {
+      turnEl.textContent += ' 🤖';
+    }
     
     if (oldBoard.status === 'playing' && board.status === 'finished') {
       import('../../hub').then(h => h.markGameCompleted('o-an-quan'));
+      const { showResultOverlay } = await import('../../ui');
+      const scores = getScore(board);
+      const title =
+        board.winner === 1
+          ? 'Người 1 thắng! 🎉'
+          : board.winner === 2
+            ? 'Người 2 thắng! 🎉'
+            : 'Hòa rồi!';
+      showResultOverlay({
+        title,
+        sub: `Điểm: ${scores.p1} — ${scores.p2}`,
+        win: board.winner !== 0,
+        onReplay: () => resetBoard(),
+        onHome: () => {
+          import('../../hub').then(h => h.returnToHub());
+        },
+      });
     }
 
     return board;
@@ -407,55 +432,72 @@ export function buildOAQScene(container: HTMLElement): void {
       justify-content: center;
       width: 100%;
       min-height: 480px;
-      padding: 1.25rem;
+      padding: 5rem 1.25rem 1.25rem;
       box-sizing: border-box;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: #3e2723;
+      font-family: var(--font-body);
+      color: var(--ink);
       user-select: none;
       position: relative;
     }
     .oaq-turn {
-      font-size: 1.2rem;
-      font-weight: 700;
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 800;
       margin-bottom: 1rem;
-      padding: 0.5rem 1.5rem;
-      background: #fff8e1;
-      border: 2px solid #d7ccc8;
-      border-radius: 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      transition: all 0.3s ease;
+      padding: 0.5rem 1.4rem;
+      background: var(--paper-bright);
+      border: 2px solid var(--wood);
+      border-radius: var(--r-pill);
+      box-shadow: var(--shadow-paper);
+      color: var(--ink);
+      line-height: 1.3;
+    }
+    .oaq-turn::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--leaf);
+      margin-right: 6px;
+      vertical-align: middle;
     }
     .oaq-board {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 1rem;
-      background: #8d6e63;
-      padding: 1.5rem;
-      border-radius: 24px;
-      box-shadow: inset 0 2px 8px rgba(0,0,0,0.3), 0 8px 16px rgba(0,0,0,0.2);
-      border: 4px solid #5d4037;
-      max-width: 900px;
-      width: 100%;
+      background: var(--paper-deep);
+      padding: 1.25rem;
+      border-radius: var(--r-board);
+      box-shadow: inset 0 2px 8px rgba(89,55,31,0.25), var(--shadow-paper);
+      border: 4px solid var(--wood);
+      max-width: 680px;
+      width: min(94vw, 680px);
       box-sizing: border-box;
+      position: relative;
     }
     .oaq-score {
+      font-family: var(--font-display);
       font-size: 1.05rem;
-      font-weight: 600;
-      color: #efebe9;
+      font-weight: 800;
+      color: var(--ink);
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      line-height: 1.3;
     }
     .oaq-score-val {
       display: inline-block;
       min-width: 2.2rem;
       padding: 0.2rem 0.6rem;
-      background: #ffecb3;
-      color: #3e2723;
-      border-radius: 12px;
+      background: var(--paper-bright);
+      border: 2px solid var(--wood);
+      color: var(--ink);
+      border-radius: var(--r-pill);
       text-align: center;
-      font-weight: 700;
+      font-weight: 800;
+      box-shadow: 0 2px 0 var(--wood);
     }
     .oaq-play-area {
       display: flex;
@@ -476,16 +518,16 @@ export function buildOAQScene(container: HTMLElement): void {
       gap: 0.5rem;
       padding: 0.5rem;
       border-radius: 16px;
-      background: rgba(0,0,0,0.15);
-      transition: background 0.3s, box-shadow 0.3s;
+      background: rgba(89,55,31,0.08);
+      transition: background var(--dur-std), box-shadow var(--dur-std);
     }
     .oaq-row.active {
-      background: rgba(255, 235, 59, 0.2);
-      box-shadow: 0 0 10px rgba(255, 235, 59, 0.4);
+      background: rgba(240,168,40,0.22);
+      box-shadow: 0 0 0 2px var(--marigold);
     }
     .o-pit {
-      background: #d7ccc8;
-      border: 2px solid #a1887f;
+      background: var(--paper-bright);
+      border: 2px solid var(--wood);
       border-radius: 50%;
       aspect-ratio: 1 / 1;
       display: flex;
@@ -494,32 +536,38 @@ export function buildOAQScene(container: HTMLElement): void {
       justify-content: center;
       position: relative;
       cursor: pointer;
-      box-shadow: inset 0 3px 6px rgba(0,0,0,0.25);
-      transition: transform 0.15s, border-color 0.15s;
+      box-shadow: inset 0 3px 6px rgba(89,55,31,0.3);
+      transition: transform var(--dur-micro), border-color var(--dur-micro);
     }
     .o-pit:hover:not(.oaq-quan):not([data-disabled="true"]) {
       transform: scale(1.05);
-      border-color: #ffb300;
+      border-color: var(--marigold);
+      box-shadow: inset 0 3px 6px rgba(89,55,31,0.3), 0 0 0 2px var(--marigold);
     }
     .o-pit[data-disabled="true"] {
       cursor: default;
+      filter: saturate(0.6);
     }
     .o-pit.oaq-quan {
       width: 80px;
       height: 150px;
       border-radius: 40px;
-      background: #ffe082;
-      border: 3px solid #ffb300;
+      background: var(--marigold);
+      border: 3px solid var(--wood);
       cursor: default;
-      box-shadow: inset 0 4px 8px rgba(0,0,0,0.2), 0 0 10px rgba(255, 179, 0, 0.3);
+      box-shadow: inset 0 4px 8px rgba(89,55,31,0.25), 0 0 12px rgba(240,168,40,0.5);
+    }
+    .o-pit.oaq-quan[data-empty="true"] {
+      background: var(--paper-deep);
+      box-shadow: inset 0 4px 8px rgba(89,55,31,0.25);
     }
     .oaq-pit-count {
       position: absolute;
       top: 4px;
       font-size: 0.75rem;
       font-weight: 700;
-      color: #3e2723;
-      background: rgba(255,255,255,0.75);
+      color: var(--ink);
+      background: rgba(253,248,236,0.85);
       padding: 1px 5px;
       border-radius: 8px;
     }
@@ -536,49 +584,50 @@ export function buildOAQScene(container: HTMLElement): void {
     .o-seed {
       width: 8px;
       height: 8px;
-      border-radius: 50%;
-      background: #4e342e;
-      box-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+      border-radius: 48% 52% 50% 50% / 52% 48% 52% 48%;
+      background: var(--wood-deep);
+      box-shadow: 1px 1px 2px rgba(89,55,31,0.4);
     }
     .oaq-quan .o-seed {
-      background: #e65100;
+      background: var(--lacquer);
       width: 10px;
       height: 10px;
     }
     .oaq-seeds-more {
       font-size: 0.7rem;
       font-weight: 700;
-      color: #4e342e;
+      color: var(--wood-deep);
     }
     .oaq-actions {
       margin-top: 1rem;
     }
     .oaq-new {
-      padding: 0.6rem 1.4rem;
-      font-size: 1rem;
-      font-weight: 700;
-      color: #fff;
-      background: #6d4c41;
-      border: none;
-      border-radius: 8px;
+      padding: 0.6rem 1.6rem;
+      font-size: 1.05rem;
+      font-weight: 800;
+      font-family: var(--font-display);
+      color: #FFF8EC;
+      background: var(--lacquer);
+      border: 2px solid var(--lacquer-deep);
+      border-radius: var(--r-btn);
       cursor: pointer;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-      transition: background 0.2s, transform 0.1s;
+      box-shadow: var(--shadow-toy);
+      transition: background var(--dur-micro), transform var(--dur-micro), box-shadow var(--dur-micro);
     }
     .oaq-new:hover {
-      background: #5d4037;
-      transform: translateY(-1px);
+      background: var(--lacquer-bright);
     }
     .oaq-new:active {
-      transform: translateY(1px);
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 var(--wood-deep);
     }
     .oaq-flying-seed {
       position: absolute;
       width: 12px;
       height: 12px;
-      border-radius: 50%;
-      background: #ff6f00;
-      box-shadow: 0 0 6px rgba(255, 111, 0, 0.8);
+      border-radius: 48% 52% 50% 50% / 52% 48% 52% 48%;
+      background: var(--wood-deep);
+      box-shadow: 0 1px 3px rgba(89,55,31,0.5);
       pointer-events: none;
       z-index: 1000;
     }
@@ -593,6 +642,12 @@ export function buildOAQScene(container: HTMLElement): void {
 
   const boardEl = document.createElement('div');
   boardEl.className = 'oaq-board';
+
+  for (const pos of ['tl', 'tr', 'br', 'bl']) {
+    const corner = document.createElement('div');
+    corner.className = `dh-corner ${pos}`;
+    boardEl.appendChild(corner);
+  }
 
   const score2Container = document.createElement('div');
   score2Container.className = 'oaq-score oaq-score-2';
