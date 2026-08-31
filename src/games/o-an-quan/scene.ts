@@ -350,17 +350,33 @@ export async function driveMove(pitIndex: number, isAgent: boolean = false): Pro
 
     board = executeMove(board, pitIndex);
 
-    await animateSowing(trace.path, trace.counts);
-
     const oldScore = mover === 1 ? oldBoard.captured[0] : oldBoard.captured[1];
     const newScore = mover === 1 ? board.captured[0] : board.captured[1];
     const gained = newScore - oldScore;
+    const captureFromPit =
+      trace.capturedPits.length > 0 ? trace.capturedPits[0] : pitIndex;
 
-    if (gained > 0) {
-      const fromPit =
-        trace.capturedPits.length > 0 ? trace.capturedPits[0] : pitIndex;
-      await animateCapture(fromPit, mover, gained);
-    } else if (isAgent) {
+    if (isAgent) {
+      // Agent moves must never hang on animation: run it fire-and-forget so a
+      // throttled/paused rAF (headless or backgrounded tab) can't block the
+      // tool call from returning the board.
+      void animateSowing(trace.path, trace.counts)
+        .then(() =>
+          gained > 0
+            ? animateCapture(captureFromPit, mover, gained)
+            : Promise.resolve()
+        )
+        .catch(() => {
+          // Best-effort animation; ignore failures.
+        });
+    } else {
+      await animateSowing(trace.path, trace.counts);
+      if (gained > 0) {
+        await animateCapture(captureFromPit, mover, gained);
+      }
+    }
+
+    if (gained === 0 && isAgent) {
       // Weak move grumble
       const targetPit = pitEls[pitIndex];
       if (targetPit && !reducedMotion()) {
