@@ -363,7 +363,7 @@ export function placeBauCuaBet(
   return state;
 }
 
-export async function rollBauCuaDice(): Promise<BauCuaState> {
+export async function rollBauCuaDice(isAgent: boolean = false): Promise<BauCuaState> {
   if (state.status !== 'betting' || state.bets.length === 0 || isRolling) {
     return state;
   }
@@ -372,18 +372,39 @@ export async function rollBauCuaDice(): Promise<BauCuaState> {
   updateBauCuaView(state);
 
   if (state.lastRoll) {
-    await animateDiceRoll(state.lastRoll);
-    
-    // Check for triple
-    if (state.lastRoll[0] === state.lastRoll[1] && state.lastRoll[1] === state.lastRoll[2]) {
-      if (rootEl && !reducedMotion()) {
-        gsap.fromTo(rootEl, 
-          { x: -20, y: -20 }, 
-          { x: 20, y: 20, duration: 0.05, yoyo: true, repeat: 10, clearProps: 'x,y' }
-        );
+    const roll = state.lastRoll;
+    const isTriple = roll[0] === roll[1] && roll[1] === roll[2];
+
+    if (isAgent) {
+      // Agent rolls must never hang on animation: run it fire-and-forget so a
+      // throttled/paused rAF (headless or backgrounded tab) can't block the
+      // tool call from returning the state.
+      void animateDiceRoll(roll).catch(() => {
+        // Best-effort animation; ignore failures.
+      });
+      if (isTriple) {
+        if (rootEl && !reducedMotion()) {
+          gsap.fromTo(rootEl,
+            { x: -20, y: -20 },
+            { x: 20, y: 20, duration: 0.05, yoyo: true, repeat: 10, clearProps: 'x,y' }
+          );
+        }
+        void import('../../ui').then(({ showToast }) => showToast('XỐC! BA CON!'));
       }
-      const { showToast } = await import('../../ui');
-      showToast('XỐC! BA CON!');
+    } else {
+      await animateDiceRoll(roll);
+
+      // Check for triple
+      if (isTriple) {
+        if (rootEl && !reducedMotion()) {
+          gsap.fromTo(rootEl,
+            { x: -20, y: -20 },
+            { x: 20, y: 20, duration: 0.05, yoyo: true, repeat: 10, clearProps: 'x,y' }
+          );
+        }
+        const { showToast } = await import('../../ui');
+        showToast('XỐC! BA CON!');
+      }
     }
   }
 
@@ -391,17 +412,32 @@ export async function rollBauCuaDice(): Promise<BauCuaState> {
   return state;
 }
 
-export async function resolveBauCua(): Promise<BauCuaState> {
+export async function resolveBauCua(isAgent: boolean = false): Promise<BauCuaState> {
   if (state.status !== 'rolled') return state;
 
   const before = state.playerPoints;
   state = resolveBets(state);
   const net = state.playerPoints - before;
 
-  if (net > 0) {
-    await animateWinnings(net);
-  } else if (net < 0) {
-    await animateLoss(-net);
+  if (isAgent) {
+    // Agent resolves must never hang on animation: run it fire-and-forget so a
+    // throttled/paused rAF (headless or backgrounded tab) can't block the
+    // tool call from returning the state.
+    if (net > 0) {
+      void animateWinnings(net).catch(() => {
+        // Best-effort animation; ignore failures.
+      });
+    } else if (net < 0) {
+      void animateLoss(-net).catch(() => {
+        // Best-effort animation; ignore failures.
+      });
+    }
+  } else {
+    if (net > 0) {
+      await animateWinnings(net);
+    } else if (net < 0) {
+      await animateLoss(-net);
+    }
   }
 
   import('../../hub').then(h => h.markGameCompleted('bau-cua'));
