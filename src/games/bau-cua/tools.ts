@@ -55,7 +55,7 @@ export const bauCuaTools: GameToolDef[] = [
     annotations: { readOnlyHint: false, untrustedContentHint: false },
     execute: async () => {
       try {
-        const s = await rollBauCuaDice();
+        const s = await rollBauCuaDice(true);
         if (!s.lastRoll)
           return JSON.stringify({
             status: 'error',
@@ -85,7 +85,7 @@ export const bauCuaTools: GameToolDef[] = [
     annotations: { readOnlyHint: false, untrustedContentHint: false },
     execute: async () => {
       try {
-        const s = await resolveBauCua();
+        const s = await resolveBauCua(true);
         const last = s.roundHistory[s.roundHistory.length - 1];
         const netGain = last ? last.netGain : 0;
         return JSON.stringify({
