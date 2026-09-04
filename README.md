@@ -47,9 +47,9 @@ In conventional web implementations, awaiting UI animations causes agent tool ca
 - Visual animations (dice rolling, seed distribution, puppet gestures, win effects) run in the background via fire-and-forget promises (`void animate().catch(...)`).
 - This guarantees agents never hang waiting for animations to finish, while human spectators still enjoy smooth, rich visual feedback.
 
-## 🧰 WebMCP Tools Reference (21 Tools Total)
+## 🧰 WebMCP Tools Reference (26 Tools Total)
 
-Sân Chơi provides **21 WebMCP tools** across the hub and individual games (4 hub-level + 4 Ô ăn quan + 4 Bầu cua + 9 Múa rối nước):
+Sân Chơi provides **26 WebMCP tools** across the hub and individual games (4 hub-level + 4 Ô ăn quan + 4 Bầu cua + 9 Múa rối nước + 5 Đánh quay):
 
 ### 1. Hub & System Tools (4 tools)
 | Tool | Description |
@@ -87,6 +87,15 @@ Sân Chơi provides **21 WebMCP tools** across the hub and individual games (4 h
 | `water_puppet_trigger_effect` | Triggers stage pyrotechnics & effects (`splash`, `rain`, `clear`, `fireworks`). | `effectName` |
 | `water_puppet_speak` | Displays narrator or puppet spoken dialogue lines to the audience. | `speaker`, `message` |
 | `water_puppet_finish_show` | Concludes the performance, calculates rating, and saves score. | — |
+
+### 5. Đánh quay — Spinning Top (5 tools)
+| Tool | Description | Key Parameters |
+| --- | --- | --- |
+| `danh_quay_start` | Spawns a new spinning top with 30 initial energy. | — |
+| `danh_quay_whip` | Whip the top to add energy (nhe +5, vua +12, manh +22). | `power` (`nhe`, `vua`, `manh`) |
+| `danh_quay_trick` | Perform a trick costing 40 energy for applause points. | `trick` (`nguoi_duc`, `bay_cao`, `qua_gam`) |
+| `danh_quay_state` | Read current top state: energy, wobble, tricks landed, and score. | — |
+| `danh_quay_finish` | Stop spinning and end the game. Saves final score and record. | — |
 
 ## 🚀 How to Run Locally
 

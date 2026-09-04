@@ -245,6 +245,11 @@ const HOW_TO: Record<string, HowToStep[]> = {
     { vi: 'Gói bánh', en: 'Fold and boil when you think the ratio is perfect (50/25/25).' },
     { vi: 'Tránh tràn', en: 'Do not overfill the box!' },
   ],
+  'danh-quay': [
+    { vi: 'Bắt đầu', en: 'Start spinning the top.' },
+    { vi: 'Quất roi', en: 'Whip to add energy. Watch out for overwhipping!' },
+    { vi: 'Biểu diễn', en: 'Perform tricks for applause, but it costs energy.' },
+  ],
 };
 
 export function hasSeenHowTo(gameId: string): boolean {
