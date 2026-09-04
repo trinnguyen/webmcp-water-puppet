@@ -56,10 +56,10 @@ export function makeSoundToggle(): HTMLButtonElement {
 export function makeSettingsButton(): HTMLButtonElement {
   const btn = document.createElement('button');
   btn.className = 'icon-btn';
+  btn.setAttribute('data-settings-btn', '');
   btn.textContent = '⚙';
   btn.title = 'Cài đặt';
   btn.setAttribute('aria-label', 'Cài đặt');
-  btn.addEventListener('click', () => showSettingsSheet());
   return btn;
 }
 
@@ -368,10 +368,10 @@ export function setupUI(): void {
     });
   }
 
-  const settingsBtn = document.getElementById('settings-btn');
-  if (settingsBtn) {
-    settingsBtn.addEventListener('click', () => showSettingsSheet());
-  }
+  document.addEventListener('click', (e) => {
+    const t = e.target as HTMLElement;
+    if (t.closest('[data-settings-btn]')) showSettingsSheet();
+  });
 
   const showNameEl = document.getElementById('show-name');
   if (showNameEl) {
