@@ -338,10 +338,9 @@ function buildCard(g: GameDef): HTMLElement {
   cardEl.setAttribute('data-game-id', g.id);
 
   const playedCount = hubState.gamesPlayedLedger[g.id] || 0;
-  const comingSoon = g.id === 'water-puppet';
   const stampHtml =
     playedCount > 0 ? `<div class="hub-stamp">Đã chơi ×${playedCount}</div>` : '';
-  const ribbonHtml = comingSoon ? `<div class="hub-ribbon">Sắp ra mắt</div>` : '';
+  const ribbonHtml = '';
 
   cardEl.innerHTML = `
     ${stampHtml}
