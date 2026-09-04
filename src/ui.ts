@@ -234,6 +234,11 @@ const HOW_TO: Record<string, HowToStep[]> = {
     { vi: 'Hỏi đáp', en: 'Chant and ask the doctor.' },
     { vi: 'Đuổi bắt', en: 'The doctor chases the tail at different speeds!' },
   ],
+  'banh-chung': [
+    { vi: 'Đổ nguyên liệu', en: 'Drop rice, beans, and pork into the box.' },
+    { vi: 'Gói bánh', en: 'Fold and boil when you think the ratio is perfect (50/25/25).' },
+    { vi: 'Tránh tràn', en: 'Do not overfill the box!' },
+  ],
 };
 
 export function hasSeenHowTo(gameId: string): boolean {
