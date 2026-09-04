@@ -234,6 +234,12 @@ const HOW_TO: Record<string, HowToStep[]> = {
     { vi: 'Hỏi đáp', en: 'Chant and ask the doctor.' },
     { vi: 'Đuổi bắt', en: 'The doctor chases the tail at different speeds!' },
   ],
+  'son-tinh': [
+    { vi: 'Dùng điểm xây đê chống lũ.', en: 'Use points to build flood defenses.' },
+    { vi: 'Triệu hồi quà cưới trợ giúp.', en: 'Summon wedding gifts for buffs.' },
+    { vi: 'Đọc tin nhắn của Thủy Tinh.', en: "Read Thủy Tinh's angry texts." },
+    { vi: 'Kết thúc mùa lũ để tính điểm.', en: 'End the flood season to score.' },
+  ],
 };
 
 export function hasSeenHowTo(gameId: string): boolean {
