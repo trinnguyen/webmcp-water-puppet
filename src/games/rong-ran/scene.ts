@@ -25,8 +25,19 @@ const STORAGE_KEY = 'san_choi_rong_ran';
 let state: RongRanState = createInitialState(6);
 let rootEl: HTMLElement | null = null;
 let gsapCtx: gsap.Context | null = null;
-let chantTimer: number | null = null;
 let bubbleTimer: number | null = null;
+
+function safeGsapTo(target: gsap.TweenTarget, vars: gsap.TweenVars): gsap.core.Tween {
+  return gsapCtx ? gsapCtx.add(() => gsap.to(target, vars)) : gsap.to(target, vars);
+}
+
+function safeGsapFromTo(
+  target: gsap.TweenTarget,
+  fromVars: gsap.TweenVars,
+  toVars: gsap.TweenVars
+): gsap.core.Tween {
+  return gsapCtx ? gsapCtx.add(() => gsap.fromTo(target, fromVars, toVars)) : gsap.fromTo(target, fromVars, toVars);
+}
 
 function loadSaveData(): RongRanSaveData {
   try {
@@ -167,7 +178,7 @@ function animateDragonEntrance(): void {
   const segments = rootEl.querySelectorAll('.rr-segment');
   if (!segments.length) return;
 
-  gsap.fromTo(
+  safeGsapFromTo(
     segments,
     { scale: 0, opacity: 0, y: 20 },
     { scale: 1, opacity: 1, y: 0, duration: 0.4, stagger: 0.05, ease: 'back.out(1.5)' }
@@ -179,7 +190,7 @@ function animateChantBeat(): void {
   const chain = rootEl.querySelector('.rr-chain');
   if (!chain) return;
 
-  gsap.to(chain, {
+  safeGsapTo(chain, {
     y: -8,
     duration: 0.15,
     yoyo: true,
@@ -197,7 +208,7 @@ function showDoctorSpeech(text: string): void {
   bubble.style.display = 'block';
 
   if (!reducedMotion()) {
-    gsap.fromTo(
+    safeGsapFromTo(
       bubble,
       { opacity: 0, y: 10, scale: 0.8 },
       { opacity: 1, y: 0, scale: 1, duration: 0.25, ease: 'back.out(1.6)' }
@@ -210,7 +221,7 @@ function showDoctorSpeech(text: string): void {
   bubbleTimer = window.setTimeout(() => {
     if (bubble) {
       if (!reducedMotion()) {
-        gsap.to(bubble, {
+        safeGsapTo(bubble, {
           opacity: 0,
           y: -5,
           duration: 0.2,
@@ -232,7 +243,7 @@ function showChantVisual(chantIndex: number): void {
     if (idx === chantIndex) {
       el.classList.add('active');
       if (!reducedMotion()) {
-        gsap.fromTo(el, { scale: 0.95 }, { scale: 1.05, duration: 0.2, ease: 'back.out(2)' });
+        safeGsapFromTo(el, { scale: 0.95 }, { scale: 1.05, duration: 0.2, ease: 'back.out(2)' });
       }
     } else {
       el.classList.remove('active');
@@ -265,7 +276,7 @@ function animateChaseVisual(speed: Speed, result: 'caught' | 'escaped' | null): 
   const duration = speed === 'nhanh' ? 0.6 : speed === 'vua' ? 1.0 : 1.6;
 
   // 1. Dragon Snake weaves to evade
-  gsap.to(headEl, {
+  safeGsapTo(headEl, {
     x: -30,
     y: -25,
     duration: duration * 0.4,
@@ -275,7 +286,7 @@ function animateChaseVisual(speed: Speed, result: 'caught' | 'escaped' | null): 
   });
 
   // Segment follow-up weave with stagger
-  gsap.to(segments, {
+  safeGsapTo(segments, {
     x: (i) => Math.sin(i * 0.6) * 20,
     duration: duration * 0.5,
     stagger: 0.06,
@@ -294,7 +305,7 @@ function animateChaseVisual(speed: Speed, result: 'caught' | 'escaped' | null): 
     const targetX = deltaX * 0.85;
     const targetY = deltaY * 0.85;
 
-    gsap.to(doctorEl, {
+    safeGsapTo(doctorEl, {
       x: targetX,
       y: targetY,
       duration,
@@ -306,21 +317,21 @@ function animateChaseVisual(speed: Speed, result: 'caught' | 'escaped' | null): 
           playSFX('capture');
 
           // Tail deflates on catch
-          gsap.to(tailEl, {
+          safeGsapTo(tailEl, {
             scale: 0,
             duration: 0.5,
             ease: 'back.in(1.7)',
           });
 
           // Doctor victory bounce
-          gsap.to(doctorEl, {
+          safeGsapTo(doctorEl, {
             y: targetY - 20,
             yoyo: true,
             repeat: 3,
             duration: 0.18,
             ease: 'power1.inOut',
             onComplete: () => {
-              gsap.to(doctorEl, { x: 0, y: 0, duration: 0.4, delay: 0.5 });
+              safeGsapTo(doctorEl, { x: 0, y: 0, duration: 0.4, delay: 0.5 });
               showToast('Thầy thuốc đã bắt được khúc đuôi!');
             },
           });
@@ -328,7 +339,7 @@ function animateChaseVisual(speed: Speed, result: 'caught' | 'escaped' | null): 
           // Escaped! Tail celebrates, doctor wobbles
           playSFX('win_chime');
 
-          gsap.to(tailEl, {
+          safeGsapTo(tailEl, {
             scale: 1.25,
             yoyo: true,
             repeat: 2,
@@ -336,14 +347,14 @@ function animateChaseVisual(speed: Speed, result: 'caught' | 'escaped' | null): 
             ease: 'back.out(2)',
           });
 
-          gsap.to(doctorEl, {
+          safeGsapTo(doctorEl, {
             rotation: 15,
             yoyo: true,
             repeat: 4,
             duration: 0.12,
             ease: 'power1.inOut',
             onComplete: () => {
-              gsap.to(doctorEl, { x: 0, y: 0, rotation: 0, duration: 0.4, delay: 0.4 });
+              safeGsapTo(doctorEl, { x: 0, y: 0, rotation: 0, duration: 0.4, delay: 0.4 });
               showToast('Rồng rắn đã luồn lách thoát khỏi thầy thuốc!');
             },
           });
@@ -838,6 +849,7 @@ export function buildRongRanScene(container: HTMLElement): void {
   dock.className = 'rr-dock';
   rootEl.appendChild(dock);
 
+  gsapCtx = gsap.context(() => {}, rootEl);
   container.appendChild(rootEl);
 
   renderScene(state);
@@ -1036,10 +1048,6 @@ function renderResultOverlay(s: RongRanState): void {
 }
 
 export function destroyRongRanScene(): void {
-  if (chantTimer !== null) {
-    window.clearInterval(chantTimer);
-    chantTimer = null;
-  }
   if (bubbleTimer !== null) {
     window.clearTimeout(bubbleTimer);
     bubbleTimer = null;
