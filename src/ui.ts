@@ -219,6 +219,11 @@ const HOW_TO: Record<string, HowToStep[]> = {
     { vi: 'Nhấn Lắc để tung 3 con xúc xắc.', en: 'Tap Roll to tumble 3 dice.' },
     { vi: 'Nhận điểm thưởng theo số xúc xắc trùng.', en: 'Win points for each matching die.' },
   ],
+  'water-puppet': [
+    { vi: 'Chọn một vở kịch dân gian yêu thích.', en: 'Choose your favorite folk tale.' },
+    { vi: 'Điều khiển con rối bơi lội, nhảy múa trên mặt nước.', en: 'Control puppets swimming and dancing on water.' },
+    { vi: 'Kích hoạt hiệu ứng và gom điểm vỗ tay thật to!', en: 'Trigger stage effects and gather big applause!' },
+  ],
 };
 
 export function hasSeenHowTo(gameId: string): boolean {

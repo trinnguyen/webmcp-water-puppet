@@ -1,5 +1,6 @@
 import type { GameDef } from '../../types';
 import { buildWaterPuppetScene, destroyWaterPuppetScene } from './scene';
+import { waterPuppetTools } from './tools';
 
 export const waterPuppetDef: GameDef = {
   id: 'water-puppet',
@@ -8,9 +9,9 @@ export const waterPuppetDef: GameDef = {
   emoji: '🎭',
   minPlayers: 1,
   maxPlayers: 1,
-  description: 'Sân khấu rối nước dân gian bên hồ nước mùa lễ hội. Sắp ra mắt — ngắm thử cảnh nước và các nhân vật rối.',
+  description: 'Sân khấu rối nước dân gian bên hồ nước mùa lễ hội. Chọn tích trò kinh điển, điều khiển con rối bơi lội nhảy múa và gom điểm vỗ tay thật to!',
   buildScene: buildWaterPuppetScene,
   destroyScene: destroyWaterPuppetScene,
-  tools: [],
-  saveKey: '',
+  tools: waterPuppetTools,
+  saveKey: 'san_choi_water_puppet',
 };
