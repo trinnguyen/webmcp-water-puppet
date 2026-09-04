@@ -6,11 +6,16 @@ This is an entry for the OpenAI WebMCP Challenge. It is an interactive, agent-na
 
 Traditional Vietnamese folk games have brought villages and families together for centuries. **Sân Chơi** ("The Playground") reimagines this rich cultural heritage for the modern AI era. Instead of simple chatbots or static mini-games, Sân Chơi provides a unified, interactive folk playground where an AI agent can direct performances, manage game boards, roll dice, track scores, and entertain players using native WebMCP tools.
 
-The hub features **three classic Vietnamese folk games**:
+The hub features **eight classic Vietnamese folk games**:
 
 1. **Ô ăn quan (Vietnamese Mancala):** A centuries-old strategy board game played on a traditional board with 10 small pits (*dân*) and 2 semicircular mandarin pits (*quan*). Players take turns scooping seeds and sowing them along the board to capture opponents' pieces.
 2. **Bầu cua tôm cá (Vietnamese Dice / Gourd-Crab-Shrimp-Fish):** The iconic Lunar New Year (*Tết*) dice game. Players wager kid-safe points across six iconic folk symbols (Gourd, Crab, Shrimp, Fish, Rooster, Deer) while 3 dice roll under a shaking plate.
 3. **Múa rối nước (Water Puppet Folk Theatre):** Vietnam's 11th-century water stage theatrical art (*thủy đình*). The agent takes the director's chair: choosing tales (*Cóc kiện trời*, *Tấm Cám*, *Rồng cá*), commanding puppets like Chú Tễu, dragon, fish, and farmer, triggering theatrical weather and pyrotechnics, and winning over the crowd to maximize the applause score!
+4. **Gióng's Iron Garage (Gara Ngựa Sắt):** Feed the iron horse, dodge invaders, defend the village — rooted in the legend of Thánh Gióng.
+5. **Rồng rắn lên mây (Dragon Snake):** The classic children's chase game — the dragon's head protects its tail from the hawk.
+6. **Đánh quay (Spinning Top):** Traditional spinning top game.
+7. **Sơn Tinh Smart Home:** Flood-defense game based on the Sơn Tinh - Thủy Tinh legend.
+8. **Bánh Chưng Physics Packer:** Stack sticky rice cakes in this physics-based puzzle.
 
 ## 🛠️ Tech Stack
 
