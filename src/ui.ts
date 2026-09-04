@@ -229,6 +229,11 @@ const HOW_TO: Record<string, HowToStep[]> = {
     { vi: 'Trang bị áo giáp và vũ khí cho ngựa.', en: 'Equip the horse with iron armor and weapons.' },
     { vi: 'Phun lửa thử nghiệm sức mạnh.', en: 'Test its power by breathing fire.' },
   ],
+  'rong-ran': [
+    { vi: 'Dàn rồng rắn', en: 'Spawn a chain of 4-12 kids.' },
+    { vi: 'Hỏi đáp', en: 'Chant and ask the doctor.' },
+    { vi: 'Đuổi bắt', en: 'The doctor chases the tail at different speeds!' },
+  ],
 };
 
 export function hasSeenHowTo(gameId: string): boolean {
