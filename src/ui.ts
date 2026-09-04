@@ -224,6 +224,11 @@ const HOW_TO: Record<string, HowToStep[]> = {
     { vi: 'Điều khiển con rối bơi lội, nhảy múa trên mặt nước.', en: 'Control puppets swimming and dancing on water.' },
     { vi: 'Kích hoạt hiệu ứng và gom điểm vỗ tay thật to!', en: 'Trigger stage effects and gather big applause!' },
   ],
+  'gia-ngua': [
+    { vi: 'Cho ngựa ăn cơm cà để lớn nhanh.', en: 'Feed the horse "com_ca" to make it grow.' },
+    { vi: 'Trang bị áo giáp và vũ khí cho ngựa.', en: 'Equip the horse with iron armor and weapons.' },
+    { vi: 'Phun lửa thử nghiệm sức mạnh.', en: 'Test its power by breathing fire.' },
+  ],
 };
 
 export function hasSeenHowTo(gameId: string): boolean {
