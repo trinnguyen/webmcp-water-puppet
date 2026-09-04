@@ -240,6 +240,11 @@ const HOW_TO: Record<string, HowToStep[]> = {
     { vi: 'Đọc tin nhắn của Thủy Tinh.', en: "Read Thủy Tinh's angry texts." },
     { vi: 'Kết thúc mùa lũ để tính điểm.', en: 'End the flood season to score.' },
   ],
+  'banh-chung': [
+    { vi: 'Đổ nguyên liệu', en: 'Drop rice, beans, and pork into the box.' },
+    { vi: 'Gói bánh', en: 'Fold and boil when you think the ratio is perfect (50/25/25).' },
+    { vi: 'Tránh tràn', en: 'Do not overfill the box!' },
+  ],
 };
 
 export function hasSeenHowTo(gameId: string): boolean {

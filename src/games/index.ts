@@ -5,8 +5,9 @@ import { waterPuppetDef } from './water-puppet';
 import { giaNguaDef } from './gia-ngua';
 import { rongRanDef } from './rong-ran';
 import { sonTinhDef } from './son-tinh';
+import { banhChungDef } from './banh-chung';
 
-export const games: GameDef[] = [oAnQuanDef, bauCuaDef, waterPuppetDef, giaNguaDef, rongRanDef, sonTinhDef];
+export const games: GameDef[] = [oAnQuanDef, bauCuaDef, waterPuppetDef, giaNguaDef, rongRanDef, sonTinhDef, banhChungDef];
 
 export function getGameById(id: string): GameDef | undefined {
   return games.find((g) => g.id === id);
